@@ -74,8 +74,9 @@ the phone (DeviceOrientation; iOS asks for permission on the first tap). `manife
 let it be added to the home screen as an app. `/install` is the share link for
 that: on Android it fires Chrome's native install prompt (manifest with PNG
 icons + `sw.js`), on iOS, where no API exists, it shows the Share → Add to
-Home Screen steps, and on desktop it shows a QR code. Append `?os=ios`,
-`?os=android` or `?os=desktop` to preview a variant.
+Home Screen steps tailored to the detected browser (Safari, Chrome, Firefox,
+Edge, Opera, DuckDuckGo, in-app browsers), and on desktop it shows a QR code.
+Append `?os=ios&browser=chrome` etc. to preview a variant.
 
 Geolocation only works on HTTPS (or localhost). When opened over plain
 `http://<lan-ip>:5180` from a phone the browser blocks it and the page falls
