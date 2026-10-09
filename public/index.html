@@ -75,6 +75,7 @@
     #top .row { display: none; }
     #top .chips { display: none; }
     #top.search-open .chips { display: flex; }
+    #top:not(.search-open) .results { display: none; }
     #top .chips { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin: 0 -12px; padding: 0 12px 2px; gap: 6px; -webkit-overflow-scrolling: touch; }
     #top .chips::-webkit-scrollbar { display: none; }
     #top .chip { flex: none; min-height: 0; height: 26px; padding: 0 9px 0 7px; font-size: 11px; gap: 4px; box-shadow: none; }
@@ -108,6 +109,24 @@
   .search input:focus { border-color: var(--stop); box-shadow: 0 0 0 4px rgba(183,163,232,0.25); }
   .search input::placeholder { color: var(--muted); font-weight: 500; }
   .search .ico { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-size: 15px; pointer-events: none; }
+
+  /* stop search results */
+  .results { display: none; flex-direction: column; gap: 5px; }
+  .results.on { display: flex; }
+  .result { display: flex; flex-direction: column; gap: 5px; padding: 9px 10px; border-radius: 16px; cursor: pointer; background: var(--soft); transition: background .12s; }
+  .result:hover { background: rgba(45,42,50,0.09); }
+  .result .name { font-weight: 800; font-size: 13px; display: flex; gap: 6px; align-items: center; }
+  .result .name small { color: var(--muted); font-weight: 600; font-size: 11px; }
+  .result .dirs { display: flex; flex-wrap: wrap; gap: 4px; }
+  .dirbtn { display: inline-flex; align-items: center; gap: 5px; font-family: inherit; font-size: 11px; font-weight: 700; color: #5b43a6; background: rgba(183,163,232,0.22); border: 1.5px solid transparent; border-radius: 999px; padding: 3px 9px 3px 4px; cursor: pointer; max-width: 100%; }
+  .dirbtn:hover, .dirbtn.on { background: rgba(183,163,232,0.4); border-color: var(--stop); }
+  .dirbtn b { background: #6f58c2; color: #fff; border-radius: 999px; min-width: 17px; height: 17px; font-size: 10px; display: inline-flex; align-items: center; justify-content: center; flex: none; }
+  .dirbtn span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .dirbtn.muted { color: var(--muted); background: var(--soft); }
+  .tabs { display: none; gap: 6px; padding: 10px 12px; overflow-x: auto; scrollbar-width: none; border-bottom: 1px solid var(--panel-border); flex: none; }
+  .tabs.on { display: flex; }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tabs .dirbtn { flex: none; font-size: 12px; padding: 5px 11px 5px 5px; max-width: 75%; }
 
   .chips { display: flex; gap: 8px; flex-wrap: wrap; }
   .chip {
@@ -290,8 +309,9 @@
   </div>
   <div class="search">
     <span class="ico">🔍</span>
-    <input id="q" type="search" placeholder="Filter lines · e.g. T4, 8, 31" autocomplete="off" spellcheck="false">
+    <input id="q" type="search" placeholder="Line or stop · e.g. T4, 8, Risti" autocomplete="off" spellcheck="false">
   </div>
+  <div class="results" id="results"></div>
   <div class="chips">
     <button class="chip tram" data-type="tram"><span class="emo">🚋</span>Tram <b id="nTram">0</b></button>
     <button class="chip bus" data-type="bus"><span class="emo">🚌</span>Bus <b id="nBus">0</b></button>
@@ -311,6 +331,7 @@
       <h2><span class="emo">🚏</span><span id="stopName">Stop</span></h2>
       <div class="right"><span class="sub" id="stopUpdated"></span><button class="iconbtn" id="stopClose" title="Close">✕</button></div>
     </header>
+    <div class="tabs" id="stopTabs"></div>
     <div class="list" id="stopList"></div>
   </aside>
 
@@ -601,9 +622,15 @@
       refilter();
     });
   });
+  // Tokens that look like a line number (T4, 8, 24A) filter vehicles; anything else searches stops.
+  const isLineToken = (t) => /^[A-Z]?\d{1,3}[A-Z]?$/.test(t);
+  let stopQuery = "";
   $("#q").addEventListener("input", (e) => {
-    lineFilter = new Set(e.target.value.split(/[,\s]+/).map(lineKey).filter(Boolean));
+    const tokens = e.target.value.split(/[,\s]+/).map(lineKey).filter(Boolean);
+    lineFilter = new Set(tokens.filter(isLineToken));
+    stopQuery = tokens.filter((t) => !isLineToken(t)).join(" ");
     refilter();
+    renderResults();
   });
 
   // ---------- Stops layer ----------
@@ -641,6 +668,7 @@
     map.on("mouseleave", "stops-hit", () => { map.getCanvas().style.cursor = ""; stopPopup.remove(); });
     map.on("click", "stops-hit", (ev) => { openStop(stops[ev.features[0].properties.i]); });
     setStopsVisible($("#stopsToggle").checked);
+    renderResults();
   }
   loadStops();
   function setStopsVisible(on) {
@@ -648,24 +676,110 @@
   }
   $("#stopsToggle").addEventListener("change", (e) => setStopsVisible(e.target.checked));
 
+  // ---------- Stop groups & search ----------
+  const norm = (t) => t.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  // All platforms sharing a name within 400 m count as one stop; letters are stable (sorted by SIRI id).
+  function groupFor(s) {
+    const platforms = stops.filter((o) => o.name === s.name && dist(o, s) <= 400).sort((a, b) => Number(a.siri) - Number(b.siri));
+    const letters = {};
+    platforms.forEach((p, i) => { letters[p.siri] = String.fromCharCode(65 + i); });
+    return { name: s.name, platforms, letters, ids: platforms.map((p) => p.siri).join(",") };
+  }
+  let clusters = null;
+  function allClusters() {
+    if (clusters) return clusters;
+    const left = new Set(stops);
+    clusters = [];
+    for (const s of stops) {
+      if (!left.has(s)) continue;
+      const g = groupFor(s);
+      g.platforms.forEach((p) => left.delete(p));
+      clusters.push(g);
+    }
+    return clusters;
+  }
+  // Which destinations each platform serves, from its departures (most frequent first).
+  function platformDirs(deps) {
+    const counts = {};
+    for (const d of deps) {
+      counts[d.stop] ??= {};
+      counts[d.stop][d.dest] = (counts[d.stop][d.dest] || 0) + 1;
+    }
+    const out = {};
+    for (const [siri, m] of Object.entries(counts)) out[siri] = Object.entries(m).sort((a, b) => b[1] - a[1]).map((x) => x[0]).slice(0, 3);
+    return out;
+  }
+  const dirCache = new Map(); // ids -> { at, dirs }
+  async function dirsFor(g) {
+    const c = dirCache.get(g.ids);
+    if (c && Date.now() - c.at < 120000) return c.dirs;
+    const j = await (await fetch(`/api/departures?ids=${g.ids}`, { cache: "no-store" })).json();
+    const dirs = platformDirs(j.departures);
+    dirCache.set(g.ids, { at: Date.now(), dirs });
+    return dirs;
+  }
+  function dirBtnHtml(g, p, dirs, extraClass = "") {
+    const list = dirs?.[p.siri];
+    const multi = g.platforms.length > 1;
+    const label = list?.length ? `→ ${list.map(esc).join(" · ")}` : "no departures";
+    return `<button class="dirbtn ${list?.length ? "" : "muted"} ${extraClass}" data-siri="${esc(p.siri)}">${multi ? `<b>${g.letters[p.siri]}</b>` : "🚏"}<span>${label}</span></button>`;
+  }
+  let resultSeq = 0;
+  async function renderResults() {
+    const box = $("#results");
+    const q = norm(stopQuery.trim());
+    if (q.length < 2 || !stops.length) { box.className = "results"; box.innerHTML = ""; return; }
+    const hits = allClusters().filter((g) => norm(g.name).includes(q));
+    hits.sort((a, b) => (norm(b.name).startsWith(q) - norm(a.name).startsWith(q)) || a.name.localeCompare(b.name));
+    const top = hits.slice(0, 5);
+    const seq = ++resultSeq;
+    box.className = "results on";
+    if (!top.length) { box.innerHTML = `<div class="empty" style="padding:10px">No stop called “${esc(stopQuery)}”.</div>`; return; }
+    box.innerHTML = top.map((g, i) => `<div class="result" data-i="${i}">
+        <div class="name">🚏 ${esc(g.name)} <small>${g.platforms.length > 1 ? `${g.platforms.length} platforms` : ""}</small></div>
+        <div class="dirs">${g.platforms.map((p) => dirBtnHtml(g, p, null)).join("")}</div>
+      </div>`).join("");
+    box.querySelectorAll(".result").forEach((row) => {
+      const g = top[Number(row.dataset.i)];
+      row.addEventListener("click", (e) => {
+        const btn = e.target.closest(".dirbtn");
+        selectStop(g, btn ? btn.dataset.siri : null);
+      });
+    });
+    // Fill in directions as they arrive.
+    await Promise.all(top.map(async (g, i) => {
+      try {
+        const dirs = await dirsFor(g);
+        if (seq !== resultSeq) return;
+        const row = box.querySelector(`.result[data-i="${i}"] .dirs`);
+        if (row) row.innerHTML = g.platforms.map((p) => dirBtnHtml(g, p, dirs)).join("");
+      } catch {}
+    }));
+  }
+  function selectStop(g, siri) {
+    const target = siri ? g.platforms.find((p) => p.siri === siri) : g.platforms[0];
+    openStop(target, siri);
+    map.flyTo({ center: [target.lon, target.lat], zoom: Math.max(map.getZoom(), 15.5), duration: 800 });
+    if (isMobile()) closeSearch();
+  }
+
   // ---------- Stop departures timeline ----------
   let curStop = null; // { name, platforms: [stop...], letters, ids: "1,2" }
   let stopTimer = null;
   let stopFetchedAt = 0;
   let lastStopData = null;
 
-  function openStop(s) {
-    // All platforms sharing this name within 250 m count as one stop.
-    const platforms = stops.filter((o) => o.name === s.name && dist(o, s) <= 250).sort((a, b) => Number(a.siri) - Number(b.siri));
-    const letters = {};
-    platforms.forEach((p, i) => { letters[p.siri] = String.fromCharCode(65 + i); });
-    curStop = { name: s.name, platforms, letters, ids: platforms.map((p) => p.siri).join(",") };
+  function openStop(s, onlySiri = null) {
+    const g = groupFor(s);
+    const { platforms, letters } = g;
+    curStop = { ...g, only: onlySiri };
     lastStopData = null;
+    $("#stopTabs").className = "tabs"; $("#stopTabs").innerHTML = "";
     $("#stopName").textContent = s.name;
     $("#stopUpdated").textContent = "";
     $("#stopList").innerHTML = `<div class="empty">Loading departures…</div>`;
     $("#stop").classList.add("on"); document.body.classList.add("stop-open");
-    map.getSource("stop-sel").setData({ type: "FeatureCollection", features: platforms.map((p) => ({ type: "Feature", properties: { label: platforms.length > 1 ? letters[p.siri] : "" }, geometry: { type: "Point", coordinates: [p.lon, p.lat] } })) });
+    map.getSource("stop-sel").setData(stopSelData());
     clearInterval(stopTimer);
     refreshStop();
     stopTimer = setInterval(refreshStop, STOP_REFRESH_MS);
@@ -685,16 +799,36 @@
       if (curStop !== mine) return;
       stopFetchedAt = Date.now();
       lastStopData = j;
+      dirCache.set(mine.ids, { at: Date.now(), dirs: platformDirs(j.departures) });
+      renderTabs(j);
       renderStop(j);
     } catch (e) {
       if (curStop === mine) $("#stopList").innerHTML = `<div class="empty">Couldn't load departures.<br>Retrying shortly.</div>`;
     }
   }
+  function renderTabs(j) {
+    const tabs = $("#stopTabs");
+    if (!curStop || curStop.platforms.length < 2) { tabs.className = "tabs"; tabs.innerHTML = ""; return; }
+    const dirs = platformDirs(j.departures);
+    tabs.className = "tabs on";
+    tabs.innerHTML = `<button class="dirbtn ${curStop.only ? "" : "on"}" data-siri=""><span>All</span></button>` +
+      curStop.platforms.map((p) => dirBtnHtml(curStop, p, dirs, curStop.only === p.siri ? "on" : "")).join("");
+    tabs.querySelector(".dirbtn.on")?.scrollIntoView({ inline: "nearest", block: "nearest" });
+    tabs.querySelectorAll(".dirbtn").forEach((b) => b.addEventListener("click", () => {
+      curStop.only = b.dataset.siri || null;
+      renderTabs(lastStopData); renderStop(lastStopData);
+      map.getSource("stop-sel").setData(stopSelData());
+    }));
+  }
+  function stopSelData() {
+    const ps = curStop.platforms.filter((p) => !curStop.only || p.siri === curStop.only);
+    return { type: "FeatureCollection", features: ps.map((p) => ({ type: "Feature", properties: { label: curStop.platforms.length > 1 ? curStop.letters[p.siri] : "" }, geometry: { type: "Point", coordinates: [p.lon, p.lat] } })) };
+  }
   function renderStop(j) {
     if (!curStop) return;
-    const deps = j.departures.filter((d) => enabled[d.type]).slice(0, 25);
+    const deps = j.departures.filter((d) => enabled[d.type] && (!curStop.only || d.stop === curStop.only)).slice(0, 25);
     if (!deps.length) {
-      $("#stopList").innerHTML = `<div class="empty">😴 No upcoming departures from ${esc(curStop.name)}.</div>`;
+      $("#stopList").innerHTML = `<div class="empty">😴 No upcoming departures from ${esc(curStop.name)}${curStop.only ? " · platform " + curStop.letters[curStop.only] : ""}.</div>`;
       return;
     }
     const multi = curStop.platforms.length > 1;
@@ -704,7 +838,7 @@
       const isNow = d.inSec < 45;
       const status = Math.abs(delta) < 1 ? `<span class="tag ontime">on time</span>`
         : delta > 0 ? `<span class="tag late">+${delta} min</span>` : `<span class="tag early">${delta} min</span>`;
-      const platform = multi ? `<span class="tag plat">${esc(curStop.letters[d.stop] || "?")}</span>` : "";
+      const platform = multi && !curStop.only ? `<span class="tag plat">${esc(curStop.letters[d.stop] || "?")}</span>` : "";
       return `<div class="dep ${d.type}">
         <div class="when ${isNow ? "now" : ""}">${isNow ? "now" : min}<small>${isNow ? "" : "min"}</small></div>
         <div class="dot ${isNow ? "now" : ""}"></div>

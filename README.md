@@ -26,7 +26,10 @@ Then open http://localhost:5180. No dependencies, no API keys.
   within a radius sorted by approaching / moving away (right-click the map to
   move the location). Tap a stop for a departures timeline: minutes until each
   line arrives, delay vs timetable, platform letter matching the map; refreshes
-  every 15 s.
+  every 15 s. The search box also finds stops by name; each result lists its
+  platforms with the destinations they serve (A → Männiku · Urda, B → Viru …)
+  so you can pick the right side of the road, and the stop panel has matching
+  platform tabs.
 
 ## Feed format (gps.txt)
 
