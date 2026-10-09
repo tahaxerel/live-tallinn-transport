@@ -32,6 +32,8 @@ upstream request. `vercel.json` sets a 10 s function timeout.
     [Transitous](https://transitous.org) (open MOTIS instance, no key), trimmed
     to legs, stops and decoded route geometry
   - `GET /api/geocode?q=...` → places, addresses and stops around Tallinn (Transitous)
+  - `GET /api/trip?id=...` → a trip's full stop sequence, timetable and geometry
+    (used to match the live vehicle you will board)
 - `public/index.html` — MapLibre GL + OpenFreeMap light style, pastel UI with
   🚋 🚌 🚎 emoji markers (Nunito font, no build step). Vehicles animate
   smoothly between feed updates; heading arrow per vehicle; filter by type or
@@ -45,7 +47,12 @@ upstream request. `vercel.json` sets a 10 s function timeout.
   platform tabs. Directions (🧭): A → B by public transport like Google Maps,
   from your location or any typed place to a stop, address or map pin; shows
   departure/arrival times, transfers, step-by-step legs, draws the route on the
-  map and highlights the live vehicles of the lines you will ride.
+  map and highlights the live vehicles of the lines you will ride. Live
+  tracking then finds the actual vehicle for your first leg by projecting
+  same-line GPS positions onto the trip's route (right direction, not past
+  your stop, closest to it), shows "5 stops away · here in ~4 min (1 min
+  late)" with a leave-now / too-tight verdict against your walking time, and
+  pulses that vehicle on the map. Refreshes with every feed update.
 
 ## Feed format (gps.txt)
 

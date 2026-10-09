@@ -3,7 +3,7 @@
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
-const { getVehicles, getStops, getDepartures, plan, geocode } = require("./lib/transit");
+const { getVehicles, getStops, getDepartures, plan, geocode, trip } = require("./lib/transit");
 
 const PORT = process.env.PORT || 5180;
 const PUBLIC = path.join(__dirname, "public");
@@ -30,6 +30,7 @@ http
       if (url.pathname === "/api/departures") return json(getDepartures(url.searchParams.get("ids")), "no-store");
       if (url.pathname === "/api/plan") return json(plan(url.searchParams.get("from"), url.searchParams.get("to"), url.searchParams.get("time"), url.searchParams.get("arriveBy") === "1"), "no-store");
       if (url.pathname === "/api/geocode") return json(geocode(url.searchParams.get("q")), "no-cache");
+      if (url.pathname === "/api/trip") return json(trip(url.searchParams.get("id")), "no-cache");
 
       let p = url.pathname === "/" ? "/index.html" : url.pathname;
       if (p === "/install") p = "/install.html";

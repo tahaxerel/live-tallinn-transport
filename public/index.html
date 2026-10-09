@@ -268,6 +268,13 @@
   .lg .body { font-weight: 700; font-size: 13px; min-width: 0; line-height: 1.3; }
   .lg .body small { display: block; color: var(--muted); font-weight: 600; font-size: 12px; margin-top: 2px; }
   .lg .body .badge { vertical-align: middle; margin-right: 4px; }
+  .lv { margin-top: 5px; font-size: 12px; font-weight: 800; display: flex; flex-direction: column; gap: 3px; }
+  .lv .ok { color: #1f8f5f; }
+  .lv .warn { color: #c2512a; }
+  .lv .mut { color: var(--muted); font-weight: 600; }
+  .lv .dotlive { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--ok); margin-right: 5px; animation: pulse 1.6s infinite; vertical-align: 1px; }
+  .veh.track .bubble { box-shadow: 0 0 0 4px rgba(63,191,134,0.5), 0 0 0 10px rgba(63,191,134,0.18), 0 4px 14px rgba(80,60,40,0.3); animation: trackpulse 1.6s infinite; }
+  @keyframes trackpulse { 0%, 100% { transform: translate(-50%, -58%) scale(1); } 50% { transform: translate(-50%, -58%) scale(1.12); } }
   .dirgo { background: var(--soft); border: none; border-radius: 999px; height: 30px; padding: 0 10px; font: inherit; font-weight: 800; font-size: 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; }
   .dirgo:hover { background: rgba(45,42,50,0.1); }
   .result .go { margin-top: 2px; }
@@ -598,6 +605,7 @@
     refreshCounts(list);
     applyHighlight();
     renderNear();
+    updateLiveTracking();
   }
 
   function animate() {
@@ -1149,7 +1157,7 @@
         out.push(`<div class="lg walk"><div class="t">${fmtT(l.startTime)}</div><div class="bar"><i></i></div><div class="body">🚶 Walk ${Math.round(l.duration / 60)} min<small>${Math.round(l.distance)} m to ${esc(nm(l.to))}</small></div></div>`);
       } else {
         const c = MODE_COLOR()[l.mode] || "#999";
-        out.push(`<div class="lg" style="--c:${c}"><div class="t">${fmtT(l.startTime)}</div><div class="bar"><i></i></div><div class="body"><span class="badge ${l.mode}"><span class="emo">${MODE_EMOJI[l.mode] || "🚌"}</span>${esc(l.line || "")}</span>→ ${esc(l.headsign || l.to.name)}<small>Board at ${esc(nm(l.from))} · ${l.stops.length + 1} stop${l.stops.length ? "s" : ""} · ${fmtDur(l.duration)}</small><small>Get off at ${esc(nm(l.to))} · ${fmtT(l.endTime)}</small></div></div>`);
+        out.push(`<div class="lg" style="--c:${c}"><div class="t">${fmtT(l.startTime)}</div><div class="bar"><i></i></div><div class="body"><span class="badge ${l.mode}"><span class="emo">${MODE_EMOJI[l.mode] || "🚌"}</span>${esc(l.line || "")}</span>→ ${esc(l.headsign || l.to.name)}<small>Board at ${esc(nm(l.from))} · ${l.stops.length + 1} stop${l.stops.length ? "s" : ""} · ${fmtDur(l.duration)}</small><small>Get off at ${esc(nm(l.to))} · ${fmtT(l.endTime)}</small><div class="lv" data-leg="${it.legs.indexOf(l)}"></div></div></div>`);
       }
     }
     const last = it.legs[it.legs.length - 1];
@@ -1164,6 +1172,115 @@
     drawRoute(it);
     highlightLines = new Set(it.legs.filter((l) => l.mode !== "walk" && l.line).map((l) => l.line));
     applyHighlight();
+    startTracking(it);
+  }
+
+  // ---------- Live tracking: which vehicle will you actually board, and where is it now? ----------
+  const tripCache = new Map(); // tripId -> trip
+  let tracked = { it: null, legs: [], vehId: null };
+  // Local flat projection (metres) around Tallinn — good enough at city scale.
+  const M_LAT = 111320, M_LON = 111320 * Math.cos(59.44 * Math.PI / 180);
+  const toXY = (lon, lat) => [(lon - 24.75) * M_LON, (lat - 59.44) * M_LAT];
+  function pathIndex(path) {
+    const xy = path.map((c) => toXY(c[0], c[1]));
+    const cum = [0];
+    for (let i = 1; i < xy.length; i++) cum.push(cum[i - 1] + Math.hypot(xy[i][0] - xy[i - 1][0], xy[i][1] - xy[i - 1][1]));
+    return { xy, cum };
+  }
+  // Nearest point on the polyline: distance off the line, distance along it, and the line's bearing there.
+  function projectOnPath(idx, lon, lat) {
+    const [px, py] = toXY(lon, lat);
+    let best = { dist: Infinity, along: 0, bearing: 0 };
+    const { xy, cum } = idx;
+    for (let i = 1; i < xy.length; i++) {
+      const [ax, ay] = xy[i - 1], [bx, by] = xy[i];
+      const dx = bx - ax, dy = by - ay, L2 = dx * dx + dy * dy;
+      const t = L2 ? Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / L2)) : 0;
+      const qx = ax + t * dx, qy = ay + t * dy;
+      const d = Math.hypot(px - qx, py - qy);
+      if (d < best.dist) best = { dist: d, along: cum[i - 1] + t * Math.sqrt(L2), bearing: (Math.atan2(dx, dy) * 180 / Math.PI + 360) % 360 };
+    }
+    return best;
+  }
+  async function startTracking(it) {
+    tracked = { it, legs: [], vehId: null };
+    const mine = it;
+    const transit = it.legs.map((l, i) => ({ l, i })).filter(({ l }) => l.mode !== "walk" && l.tripId && l.line);
+    await Promise.all(transit.map(async ({ l, i }) => {
+      try {
+        let t = tripCache.get(l.tripId);
+        if (!t) { t = await (await fetch(`/api/trip?id=${encodeURIComponent(l.tripId)}`)).json(); tripCache.set(l.tripId, t); }
+        if (tracked.it !== mine) return;
+        const idx = pathIndex(t.path);
+        const stopAlong = t.stops.map((st) => projectOnPath(idx, st.lon, st.lat).along);
+        const near = (p) => { let bi = 0, bd = Infinity; t.stops.forEach((st, k) => { const d = dist(st, p); if (d < bd) { bd = d; bi = k; } }); return bi; };
+        const boardIdx = near(l.from), alightIdx = near(l.to);
+        tracked.legs.push({ i, l, t, idx, stopAlong, boardIdx, alightIdx });
+      } catch {}
+    }));
+    updateLiveTracking();
+  }
+  function stopTracking() {
+    tracked = { it: null, legs: [], vehId: null };
+    for (const v of vehicles.values()) v.el.classList.remove("track");
+  }
+  function updateLiveTracking() {
+    if (!tracked.it || !$("#dir").classList.contains("on")) return;
+    const now = Date.now();
+    let trackId = null;
+    for (const tl of tracked.legs) {
+      const { l, t, idx, stopAlong, boardIdx } = tl;
+      const boardAlong = stopAlong[boardIdx];
+      const line = lineKey(l.line);
+      let best = null;
+      for (const v of vehicles.values()) {
+        if (lineKey(v.data.line) !== line) continue;
+        const pr = projectOnPath(idx, v.data.lon, v.data.lat);
+        if (pr.dist > 90) continue; // not on this route
+        if (angDiff(v.data.heading, pr.bearing) > 70) continue; // going the other way
+        if (pr.along > boardAlong + 40) continue; // already past your stop
+        if (!best || pr.along > best.along) best = { v, along: pr.along };
+      }
+      const box = $(`#dirList .it.on .lv[data-leg="${tl.i}"]`);
+      if (!box) continue;
+      const schedStart = new Date(l.startTime).getTime();
+      if (!best) {
+        const minsToSched = Math.round((schedStart - now) / 60000);
+        box.innerHTML = `<span class="mut">${minsToSched > 12 ? "⚪ Not on the road yet" : "⚪ No live position for this one yet"} · scheduled ${fmtT(l.startTime)}</span>`;
+        continue;
+      }
+      // Stops still ahead of the vehicle up to and including your stop.
+      let stopsAway = 0;
+      for (let k = 0; k <= boardIdx; k++) if (stopAlong[k] > best.along) stopsAway++;
+      // ETA from the timetable: how far through its schedule is the vehicle right now?
+      let k = 0;
+      while (k < stopAlong.length - 1 && stopAlong[k + 1] <= best.along) k++;
+      const tA = new Date(t.stops[k].dep || t.stops[k].arr).getTime(), tB = new Date(t.stops[Math.min(k + 1, t.stops.length - 1)].arr || t.stops[k].dep).getTime();
+      const segLen = Math.max(1, stopAlong[Math.min(k + 1, stopAlong.length - 1)] - stopAlong[k]);
+      const frac = Math.max(0, Math.min(1, (best.along - stopAlong[k]) / segLen));
+      const schedNow = tA + frac * (tB - tA);
+      const schedBoard = new Date(t.stops[boardIdx].arr || t.stops[boardIdx].dep).getTime();
+      const etaMs = Math.max(0, schedBoard - schedNow);
+      const eta = now + etaMs;
+      const delayMin = Math.round((eta - schedStart) / 60000);
+      const etaMin = Math.round(etaMs / 60000);
+      const where = stopsAway <= 0 ? "at your stop now" : stopsAway === 1 ? "next stop is yours" : `${stopsAway} stops away`;
+      const delayTxt = Math.abs(delayMin) < 1 ? "on time" : delayMin > 0 ? `${delayMin} min late` : `${-delayMin} min early`;
+      let advice = "";
+      const walkBefore = tracked.it.legs.slice(0, tl.i).reduce((a, x) => a + (x.mode === "walk" ? x.duration : 0), 0);
+      if (tl === tracked.legs[0]) {
+        const slackMin = Math.round((etaMs - walkBefore * 1000) / 60000);
+        advice = slackMin < 0 ? `<span class="warn">⚠️ Too tight: it reaches ${esc(t.stops[boardIdx].name)} ${-slackMin} min before you can. Check the next option.</span>`
+          : slackMin <= 1 ? `<span class="warn">🏃 Leave right now, it's close.</span>`
+          : `<span class="ok">🚶 Leave now and you'll have ${slackMin} min to spare.</span>`;
+      }
+      box.innerHTML = `<span class="ok"><span class="dotlive"></span>Live: ${esc(l.line)} is ${where} · here in ~${etaMin} min (${fmtT(new Date(eta).toISOString())}, ${delayTxt})</span>${advice}`;
+      if (!trackId) trackId = best.v.data.id;
+    }
+    if (trackId !== tracked.vehId) {
+      tracked.vehId = trackId;
+      for (const v of vehicles.values()) v.el.classList.toggle("track", v.data.id === trackId);
+    }
   }
 
   // --- route on the map ---
@@ -1211,6 +1328,7 @@
   function clearRoute() {
     if (routeReady) { map.getSource("route").setData(EMPTY_FC); map.getSource("route-pts").setData(EMPTY_FC); }
     highlightLines = null; applyHighlight();
+    stopTracking();
   }
 
   // ---------- Near me ----------
