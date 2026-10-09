@@ -165,12 +165,12 @@
   .grab { display: none; }
   @media (min-width: 720px) { #near.on, #stop.on { max-height: 100%; flex: 0 1 auto; } }
   @media (max-width: 719px) {
-    #side { left: 0; right: 0; bottom: 0; max-height: 100dvh; gap: 0; }
+    #side { left: 0; right: 0; bottom: 0; max-height: 100vh; gap: 0; }
     #nearBtn { margin: 0 12px calc(34px + env(safe-area-inset-bottom)) 0; }
     .maplibregl-ctrl-attrib.maplibregl-compact { border-radius: 999px; margin: 0 6px 6px 0 !important; }
     #side > .panel { border-radius: 24px 24px 0 0; border-bottom: none; padding-bottom: env(safe-area-inset-bottom); transition: max-height .25s ease; }
-    #near.on, #stop.on { max-height: 52dvh; }
-    #near.on.tall, #stop.on.tall { max-height: 90dvh; }
+    #near.on, #stop.on { max-height: 52vh; }
+    #near.on.tall, #stop.on.tall { max-height: 90vh; }
     .grab { display: block; width: 40px; height: 5px; border-radius: 3px; background: rgba(45,42,50,0.18); margin: 8px auto 0; flex: none; }
     .panel header { padding-top: 8px; cursor: pointer; }
     body.stop-open #near { display: none !important; }
@@ -226,16 +226,20 @@
   .hint { font-size: 11px; font-weight: 600; color: var(--muted); padding: 8px 16px 12px; border-top: 1px solid var(--panel-border); flex: none; }
 
   /* ---------- Directions ---------- */
-  .dirform { padding: 10px 14px 12px; border-bottom: 1px solid var(--panel-border); display: grid; grid-template-columns: 1fr 36px; gap: 6px 8px; align-items: center; flex: none; }
-  .field { display: flex; align-items: center; gap: 8px; background: #fff; border: 1.5px solid var(--panel-border); border-radius: 999px; padding: 0 12px; height: 40px; }
-  .field:focus-within { border-color: var(--stop); box-shadow: 0 0 0 3px rgba(183,163,232,0.25); }
-  .field .pt { width: 12px; height: 12px; border-radius: 50%; flex: none; }
-  .field .pt.a { background: var(--loc); box-shadow: 0 0 0 3px rgba(59,130,246,0.2); }
-  .field .pt.b { background: var(--tram); box-shadow: 0 0 0 3px rgba(255,154,118,0.3); }
-  .field input { border: none; outline: none; background: transparent; font: inherit; font-weight: 700; font-size: 14px; width: 100%; min-width: 0; color: var(--text); }
-  .field input::placeholder { color: var(--muted); font-weight: 600; }
-  .swap { grid-row: 1 / span 2; width: 36px; height: 36px; border-radius: 50%; border: none; background: var(--soft); font: inherit; font-size: 16px; cursor: pointer; }
-  .sugg { grid-column: 1 / -1; display: none; flex-direction: column; gap: 4px; max-height: 230px; overflow-y: auto; }
+  .dirform { padding: 12px 14px 10px; border-bottom: 1px solid var(--panel-border); display: grid; grid-template-columns: 22px 1fr 36px; gap: 8px 10px; align-items: center; flex: none; }
+  .rail { grid-column: 1; grid-row: 1; align-self: stretch; display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 14px 0; }
+  .rail .o { width: 12px; height: 12px; border-radius: 50%; border: 3px solid var(--text); box-sizing: border-box; background: #fff; }
+  .rail .dots { flex: 1; width: 0; margin: 6px 0; border-left: 2px dotted rgba(45,42,50,0.45); }
+  .rail .pin { width: 14px; height: 14px; border-radius: 50% 50% 50% 0; background: #e8503a; transform: rotate(-45deg); box-shadow: 0 1px 3px rgba(0,0,0,0.25); }
+  .fields { grid-column: 2; grid-row: 1; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+  .fields input { width: 100%; height: 42px; padding: 0 12px; border: 1.5px solid rgba(45,42,50,0.25); border-radius: 10px; background: #fff; font: inherit; font-weight: 700; font-size: 14px; color: var(--text); outline: none; }
+  .fields input:focus { border-color: var(--stop); box-shadow: 0 0 0 3px rgba(183,163,232,0.25); }
+  .fields input::placeholder { color: var(--muted); font-weight: 600; }
+  .swap { grid-column: 3; grid-row: 1; width: 36px; height: 36px; border-radius: 50%; border: none; background: var(--soft); font: inherit; font-size: 16px; cursor: pointer; }
+  .swap:hover { background: rgba(45,42,50,0.1); }
+  .dirmeta { grid-column: 1 / -1; grid-row: 2; display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 800; color: var(--muted); padding: 2px 0 0; }
+  .dirmeta span { background: var(--soft); border-radius: 999px; padding: 5px 10px; }
+  .sugg { grid-column: 1 / -1; grid-row: 3; display: none; flex-direction: column; gap: 4px; max-height: 230px; overflow-y: auto; }
   .sugg.on { display: flex; }
   .sg { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 12px; background: var(--soft); cursor: pointer; font-weight: 700; font-size: 13px; }
   .sg:hover { background: rgba(45,42,50,0.1); }
@@ -267,7 +271,11 @@
   .dirgo { background: var(--soft); border: none; border-radius: 999px; height: 30px; padding: 0 10px; font: inherit; font-weight: 800; font-size: 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; }
   .dirgo:hover { background: rgba(45,42,50,0.1); }
   .result .go { margin-top: 2px; }
-  @media (max-width: 719px) { body.dir-open #near, body.dir-open #stop, body.dir-open #nearBtn { display: none !important; } #dir.on { max-height: 56dvh; } #dir.on.tall { max-height: 90dvh; } }
+  @media (max-width: 719px) { body.dir-open #near, body.dir-open #stop, body.dir-open #nearBtn { display: none !important; } #dir.on { max-height: 56vh; } #dir.on.tall { max-height: 90vh; } }
+  @media (min-width: 720px) {
+    body.dir-open #top { display: none; }
+    #dir.on { position: fixed; left: 16px; top: 16px; width: 360px; max-height: calc(100vh - 32px); z-index: 1001; }
+  }
 
   /* ---------- Timeline (stop departures) ---------- */
   .timeline { position: relative; padding: 10px 8px 12px 8px; }
@@ -399,9 +407,13 @@
       <div class="right"><button class="iconbtn" id="dirClose" title="Close">✕</button></div>
     </header>
     <div class="dirform">
-      <div class="field"><span class="pt a"></span><input id="dirFrom" placeholder="Your location" autocomplete="off" spellcheck="false"></div>
-      <button class="swap" id="dirSwap" title="Swap">⇅</button>
-      <div class="field"><span class="pt b"></span><input id="dirTo" placeholder="Where to?" autocomplete="off" spellcheck="false"></div>
+      <div class="rail"><span class="o"></span><span class="dots"></span><span class="pin"></span></div>
+      <div class="fields">
+        <input id="dirFrom" placeholder="Choose starting point" autocomplete="off" spellcheck="false">
+        <input id="dirTo" placeholder="Choose destination" autocomplete="off" spellcheck="false">
+      </div>
+      <button class="swap" id="dirSwap" title="Swap start and destination">⇅</button>
+      <div class="dirmeta"><span>🕒 Leaving now</span><span>🚌 Public transport</span></div>
       <div class="sugg" id="dirSugg"></div>
     </div>
     <div class="list" id="dirList"><div class="empty">Pick a destination: tap a stop, search a place, or type above.</div></div>
@@ -990,11 +1002,15 @@
   const placeFromMe = () => (me && !manual ? { name: "Your location", lat: me.lat, lon: me.lon, isMe: true } : null);
   const resolvePt = (which) => dir[which] || (which === "from" ? placeFromMe() : null);
 
+  function syncDirFields() {
+    const a = resolvePt("from");
+    $("#dirFrom").value = a ? a.name : "";
+    $("#dirTo").value = dir.to ? dir.to.name : "";
+  }
   function openDirections(to, from) {
     if (to !== undefined) dir.to = to;
     if (from !== undefined) dir.from = from;
-    $("#dirFrom").value = dir.from ? dir.from.name : "";
-    $("#dirTo").value = dir.to ? dir.to.name : "";
+    syncDirFields();
     closeStop();
     $("#results").className = "results"; $("#results").innerHTML = "";
     $("#dir").classList.add("on"); document.body.classList.add("dir-open");
@@ -1016,7 +1032,7 @@
   $("#dirSwap").addEventListener("click", () => {
     const a = resolvePt("from"), b = dir.to;
     dir.from = b; dir.to = a && !a.isMe ? a : a ? { ...a, isMe: false } : null;
-    $("#dirFrom").value = dir.from ? dir.from.name : ""; $("#dirTo").value = dir.to ? dir.to.name : "";
+    syncDirFields();
     planNow();
   });
 
@@ -1085,6 +1101,7 @@
   // --- planning + rendering ---
   async function planNow() {
     const a = resolvePt("from"), b = resolvePt("to");
+    if (document.activeElement !== $("#dirFrom")) $("#dirFrom").value = a ? a.name : "";
     if (!b) return;
     if (!a) { $("#dirList").innerHTML = `<div class="empty">No start yet. Allow location, or tap the start field and choose a place.</div>`; return; }
     const seq = ++dir.seq;
@@ -1187,7 +1204,7 @@
       // Keep the route out from under the panels: top-left card on desktop, bottom sheet on phones.
       const pad = isMobile()
         ? { top: 130, bottom: Math.round(window.innerHeight * 0.58), left: 24, right: 24 }
-        : { top: Math.min(300, $("#top").offsetHeight + 40), bottom: 40, left: 40, right: 400 };
+        : { top: 40, bottom: 40, left: 400, right: 40 }; // directions card sits on the left
       map.fitBounds([[Math.min(...lons), Math.min(...lats)], [Math.max(...lons), Math.max(...lats)]], { padding: pad, duration: 800, maxZoom: 16 });
     }
   }
