@@ -173,7 +173,8 @@
     .panel header { padding-top: 8px; cursor: pointer; }
     body.stop-open #near { display: none !important; }
     body.stop-open #nearBtn { display: none; }
-    .maplibregl-ctrl-bottom-left { display: none; }
+    .maplibregl-ctrl-zoom-in, .maplibregl-ctrl-zoom-out { display: none !important; }
+    .maplibregl-ctrl-bottom-left { margin: 0 0 calc(34px + env(safe-area-inset-bottom)) 10px; }
     .maplibregl-ctrl-bottom-right { margin-bottom: calc(2px + env(safe-area-inset-bottom)); }
   }
 
@@ -254,7 +255,8 @@
   .maplibregl-marker:hover { z-index: 10; }
   .veh { position: absolute; width: 52px; height: 52px; cursor: pointer; }
   .veh > * { transition: opacity .3s; }
-  .veh .dir { position: absolute; inset: 0; transform: rotate(var(--h, 0deg)); transition: transform .6s ease, opacity .3s; }
+  .veh .dir { position: absolute; inset: 0; transform: rotate(calc(var(--h, 0deg) - var(--mb, 0deg))); transition: transform .6s ease, opacity .3s; }
+  body.rotating .veh .dir, body.rotating .me .cone { transition: none; }
   .veh .dir::before {
     content: ""; position: absolute; left: 50%; top: 1px; margin-left: -6px;
     width: 12px; height: 12px; border-radius: 3px 3px 2px 2px;
@@ -288,7 +290,7 @@
     background: conic-gradient(from -32deg at 50% 50%, rgba(59,130,246,0.55) 0deg, rgba(59,130,246,0.12) 64deg, transparent 64deg);
     -webkit-mask-image: radial-gradient(circle at 50% 50%, #000 0, #000 20%, transparent 50%);
     mask-image: radial-gradient(circle at 50% 50%, #000 0, #000 20%, transparent 50%);
-    transform: rotate(var(--h, 0deg)); transition: transform .12s linear;
+    transform: rotate(calc(var(--h, 0deg) - var(--mb, 0deg))); transition: transform .12s linear;
   }
   .me.heading .cone { display: block; }
   .me .dot {
@@ -391,13 +393,18 @@
     zoom: 12.6,
     minZoom: 9,
     maxZoom: 18.5,
-    dragRotate: false,
+    dragRotate: true,
     pitchWithRotate: false,
     touchPitch: false,
+    maxPitch: 0,
     attributionControl: false,
   });
-  map.touchZoomRotate.disableRotation();
-  map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "bottom-left");
+  map.addControl(new maplibregl.NavigationControl({ showCompass: true, visualizePitch: false }), "bottom-left");
+  // Heading arrows are CSS-rotated; subtract the map bearing so they keep pointing the right way.
+  const root = document.documentElement;
+  map.on("rotate", () => root.style.setProperty("--mb", map.getBearing().toFixed(1) + "deg"));
+  map.on("rotatestart", () => document.body.classList.add("rotating"));
+  map.on("rotateend", () => document.body.classList.remove("rotating"));
   map.addControl(new maplibregl.AttributionControl({ compact: window.matchMedia("(max-width: 719px)").matches, customAttribution: "Data: Tallinna Transport" }), "bottom-right");
   const ready = new Promise((res) => map.once("load", res));
   const collapseAttrib = () => document.querySelector(".maplibregl-ctrl-attrib")?.classList.remove("maplibregl-compact-show");
@@ -975,6 +982,11 @@
         haveFix = true;
         if (manual) return; // user placed the pin by hand; stop following
         setMe(p.coords.latitude, p.coords.longitude, first, p.coords.accuracy);
+        // No compass yet (iOS before the first tap)? Use the GPS course while actually moving.
+        if (!compassOn && typeof p.coords.heading === "number" && !Number.isNaN(p.coords.heading) && (p.coords.speed || 0) > 0.7) {
+          heading = p.coords.heading;
+          if (meEl) { meEl.style.setProperty("--h", heading.toFixed(1) + "deg"); meEl.classList.add("heading"); }
+        }
         if (first) onFirst?.();
         first = false;
       },
@@ -997,8 +1009,11 @@
   });
   $("#nearClose").addEventListener("click", closeNear);
   map.on("contextmenu", (e) => { e.preventDefault(); manual = true; setMe(e.lngLat.lat, e.lngLat.lng, false); openNear(false); });
-  // Compass needs a user gesture on iOS: start it on the first touch anywhere.
+  // Compass: Android allows it straight away; iOS needs a tap, so also hook the first touch.
+  const needsGesture = typeof DeviceOrientationEvent !== "undefined" && typeof DeviceOrientationEvent.requestPermission === "function";
+  if (!needsGesture) startCompass();
   document.addEventListener("touchend", () => startCompass(), { once: true, passive: true });
+  document.addEventListener("click", () => startCompass(), { once: true });
   $("#radius").addEventListener("input", (e) => {
     radiusM = Number(e.target.value);
     $("#radiusVal").textContent = fmtDist(radiusM);
