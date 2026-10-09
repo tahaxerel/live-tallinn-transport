@@ -1,7 +1,9 @@
 # Tallinn Live
 
 Real-time map of every bus, tram and trolleybus in Tallinn, built on the public
-`transport.tallinn.ee/gps.txt` feed (updates every ~3 s).
+`transport.tallinn.ee/gps.txt` feed.
+
+**Live:** https://tallinn-live-plum.vercel.app (deploys automatically from `main`)
 
 ## Run
 
@@ -10,6 +12,12 @@ node server.js
 ```
 
 Then open http://localhost:5180. No dependencies, no API keys.
+
+## Deploy
+
+Hosted on Vercel: `public/` is served statically and `api/*.js` run as
+serverless functions with edge caching (`s-maxage`), so many phones share one
+upstream request. `vercel.json` sets a 10 s function timeout.
 
 ## What's inside
 
