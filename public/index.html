@@ -358,7 +358,8 @@
   map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "bottom-left");
   map.addControl(new maplibregl.AttributionControl({ compact: window.matchMedia("(max-width: 719px)").matches, customAttribution: "Data: Tallinna Transport" }), "bottom-right");
   const ready = new Promise((res) => map.once("load", res));
-  ready.then(() => document.querySelector(".maplibregl-ctrl-attrib")?.classList.remove("maplibregl-compact-show"));
+  const collapseAttrib = () => document.querySelector(".maplibregl-ctrl-attrib")?.classList.remove("maplibregl-compact-show");
+  map.once("load", collapseAttrib); map.once("idle", collapseAttrib); setTimeout(collapseAttrib, 3000);
   window.tallinnLive = { map }; // handy for debugging in devtools
 
   // ---------- State ----------
