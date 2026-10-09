@@ -52,7 +52,11 @@ upstream request. `vercel.json` sets a 10 s function timeout.
   same-line GPS positions onto the trip's route (right direction, not past
   your stop, closest to it), shows "5 stops away · here in ~4 min (1 min
   late)" with a leave-now / too-tight verdict against your walking time, and
-  pulses that vehicle on the map. Refreshes with every feed update.
+  pulses that vehicle on the map. Refreshes with every feed update. Once your
+  GPS is on the route past the boarding stop (with the vehicle, or moving
+  faster than walking) the panel switches to ride mode: "On board 36 · 6
+  stops left", then "Next stop is yours" with vibration, a notification
+  (permission asked on the Go tap) and a tab-title alert, then "get off here".
 
 ## Feed format (gps.txt)
 

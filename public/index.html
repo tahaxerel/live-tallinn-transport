@@ -275,6 +275,12 @@
   .lv .dotlive { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--ok); margin-right: 5px; animation: pulse 1.6s infinite; vertical-align: 1px; }
   .veh.track .bubble { box-shadow: 0 0 0 4px rgba(63,191,134,0.5), 0 0 0 10px rgba(63,191,134,0.18), 0 4px 14px rgba(80,60,40,0.3); animation: trackpulse 1.6s infinite; }
   @keyframes trackpulse { 0%, 100% { transform: translate(-50%, -58%) scale(1); } 50% { transform: translate(-50%, -58%) scale(1.12); } }
+  .ride { display: none; margin: 8px 10px 2px; padding: 12px 14px; border-radius: 16px; background: rgba(63,191,134,0.14); border: 1.5px solid rgba(63,191,134,0.35); font-weight: 800; font-size: 14px; line-height: 1.35; }
+  .ride.on { display: block; }
+  .ride small { display: block; font-weight: 600; font-size: 12px; color: var(--muted); margin-top: 3px; }
+  .ride.alert { background: rgba(255,154,118,0.22); border-color: var(--tram); animation: ridepulse 1.2s infinite; font-size: 16px; }
+  @keyframes ridepulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(255,154,118,0.5); } 50% { box-shadow: 0 0 0 8px rgba(255,154,118,0); } }
+  .ride.done { background: rgba(183,163,232,0.2); border-color: var(--stop); }
   .dirgo { background: var(--soft); border: none; border-radius: 999px; height: 30px; padding: 0 10px; font: inherit; font-weight: 800; font-size: 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; }
   .dirgo:hover { background: rgba(45,42,50,0.1); }
   .result .go { margin-top: 2px; }
@@ -423,6 +429,7 @@
       <div class="dirmeta"><span>🕒 Leaving now</span><span>🚌 Public transport</span></div>
       <div class="sugg" id="dirSugg"></div>
     </div>
+    <div class="ride" id="ride"></div>
     <div class="list" id="dirList"><div class="empty">Pick a destination: tap a stop, search a place, or type above.</div></div>
   </aside>
 
@@ -1031,8 +1038,10 @@
     clearRoute();
   }
   $("#dirClose").addEventListener("click", closeDirections);
-  $("#dirChip").addEventListener("click", () => { openDirections(); if (isMobile()) closeSearch(); });
+  $("#dirChip").addEventListener("click", () => { askNotify(); openDirections(); if (isMobile()) closeSearch(); });
+  const askNotify = () => { try { if ("Notification" in window && Notification.permission === "default") Notification.requestPermission(); } catch {} };
   $("#stopDir").addEventListener("click", () => {
+    askNotify();
     if (!curStop) return;
     const p = curStop.platforms.find((x) => x.siri === curStop.only) || curStop.platforms[0];
     openDirections({ name: curStop.name, lat: p.lat, lon: p.lon });
@@ -1223,6 +1232,65 @@
   function stopTracking() {
     tracked = { it: null, legs: [], vehId: null };
     for (const v of vehicles.values()) v.el.classList.remove("track");
+    setRide(null);
+  }
+  // ---- On board: once you're riding, count down the stops and shout before yours.
+  let rideState = { leg: null, alerted: false, done: false };
+  function setRide(html, cls = "") {
+    const el = $("#ride");
+    if (!html) { el.className = "ride"; el.innerHTML = ""; return; }
+    el.className = "ride on " + cls; el.innerHTML = html;
+  }
+  function notifyGetOff(stopName) {
+    try { if (navigator.vibrate) navigator.vibrate([250, 120, 250, 120, 400]); } catch {}
+    try { if ("Notification" in window && Notification.permission === "granted") new Notification("🔔 Get off at the next stop", { body: stopName, tag: "tallinn-live-stop" }); } catch {}
+    const old = document.title; document.title = "🔔 Next stop: " + stopName; setTimeout(() => { document.title = old; }, 60000);
+  }
+  function updateRide() {
+    if (!tracked.it || !tracked.legs.length) { setRide(null); return; }
+    const gps = me && !manual && haveFix && Date.now() - meAt < 60000 ? me : null;
+    if (!gps) { if (rideState.leg) setRide(null); rideState = { leg: null, alerted: false, done: false }; return; }
+    // Which leg are we riding (or could we have just boarded)?
+    let riding = null;
+    for (const tl of tracked.legs) {
+      const { idx, stopAlong, boardIdx, alightIdx } = tl;
+      const pr = projectOnPath(idx, gps.lon, gps.lat);
+      const bA = stopAlong[boardIdx], aA = stopAlong[alightIdx];
+      if (pr.dist > (rideState.leg === tl ? 150 : 60)) continue;              // not on this route
+      if (pr.along < bA - 30 || pr.along > aA + 60) continue;                   // before boarding / after alighting
+      const veh = tl.vehId ? vehicles.get(tl.vehId) : null;
+      const withVehicle = veh && dist(gps, veh.data) < 90;
+      const moving = meSpeed > 3; // > ~11 km/h: faster than walking
+      if (rideState.leg === tl || withVehicle || (moving && pr.along > bA + 40)) { riding = { tl, pr }; break; }
+    }
+    if (!riding) { if (rideState.leg) setRide(null); rideState = { leg: null, alerted: false, done: false }; return; }
+    const { tl, pr } = riding;
+    if (rideState.leg !== tl) rideState = { leg: tl, alerted: false, done: false };
+    const { t, stopAlong, alightIdx, l } = tl;
+    const alightName = t.stops[alightIdx].name;
+    let left = 0, nextIdx = -1;
+    for (let k = 0; k <= alightIdx; k++) if (stopAlong[k] > pr.along + 25) { left++; if (nextIdx < 0) nextIdx = k; }
+    const next = nextIdx >= 0 ? t.stops[nextIdx].name : alightName;
+    if (left <= 0 || pr.along >= stopAlong[alightIdx] - 25) {
+      if (!rideState.done) { rideState.done = true; }
+      setRide(`🏁 This is ${esc(alightName)} — get off here.<small>Then ${esc(nextLegText(tl))}</small>`, "alert");
+      return;
+    }
+    if (left === 1) {
+      if (!rideState.alerted) { rideState.alerted = true; notifyGetOff(alightName); }
+      setRide(`🔔 Next stop is yours: ${esc(alightName)}<small>Get ready to get off · ${esc(nextLegText(tl))}</small>`, "alert");
+      return;
+    }
+    setRide(`🚌 On board ${esc(l.line)} · ${left} stops left<small>Next: ${esc(next)} · get off at ${esc(alightName)} (${fmtT(l.endTime)})</small>`);
+  }
+  window.tallinnLive.debug = () => ({ dir, tracked, rideState });
+  function nextLegText(tl) {
+    const legs = tracked.it.legs;
+    const after = legs.slice(tl.i + 1);
+    const nextTransit = after.find((x) => x.mode !== "walk");
+    const walk = after[0] && after[0].mode === "walk" ? Math.round(after[0].duration / 60) : 0;
+    if (nextTransit) return `walk ${walk} min and take ${nextTransit.line} → ${nextTransit.headsign || nextTransit.to.name}`;
+    return walk ? `walk ${walk} min to ${resolvePt("to")?.name || "your destination"}` : "you're there";
   }
   function updateLiveTracking() {
     if (!tracked.it || !$("#dir").classList.contains("on")) return;
@@ -1241,9 +1309,13 @@
         if (pr.along > boardAlong + 40) continue; // already past your stop
         if (!best || pr.along > best.along) best = { v, along: pr.along };
       }
+      // Once we're riding this leg, stick with the vehicle we're on even though it has passed the stop.
+      if (rideState.leg === tl && tl.vehId && vehicles.get(tl.vehId)) best = { v: vehicles.get(tl.vehId), along: projectOnPath(idx, vehicles.get(tl.vehId).data.lon, vehicles.get(tl.vehId).data.lat).along };
+      tl.vehId = best ? best.v.data.id : tl.vehId;
       const box = $(`#dirList .it.on .lv[data-leg="${tl.i}"]`);
       if (!box) continue;
       const schedStart = new Date(l.startTime).getTime();
+      if (rideState.leg === tl) { box.innerHTML = `<span class="ok"><span class="dotlive"></span>You're on this one.</span>`; if (best && !trackId) trackId = best.v.data.id; continue; }
       if (!best) {
         const minsToSched = Math.round((schedStart - now) / 60000);
         box.innerHTML = `<span class="mut">${minsToSched > 12 ? "⚪ Not on the road yet" : "⚪ No live position for this one yet"} · scheduled ${fmtT(l.startTime)}</span>`;
@@ -1281,6 +1353,7 @@
       tracked.vehId = trackId;
       for (const v of vehicles.values()) v.el.classList.toggle("track", v.data.id === trackId);
     }
+    updateRide();
   }
 
   // --- route on the map ---
@@ -1357,6 +1430,7 @@
     syncRadiusRing();
     if (fly) map.flyTo({ center: [lon, lat], zoom: Math.max(map.getZoom(), 16), duration: 900 });
     renderNear();
+    updateRide();
   }
   // The dashed search radius is only meaningful while the "Passing by" list is open.
   function syncRadiusRing() {
@@ -1415,7 +1489,7 @@
       } else attach();
     } catch {}
   }
-  let geoWatch = null, manual = false, haveFix = false;
+  let geoWatch = null, manual = false, haveFix = false, meSpeed = 0, meAt = 0;
   const canLocate = () => !!navigator.geolocation && window.isSecureContext; // geolocation needs https (or localhost)
   function stopWatch() { if (geoWatch !== null) { navigator.geolocation.clearWatch(geoWatch); geoWatch = null; } }
   // Follow the phone. onFirst runs on the first fix, onFail if we never get one.
@@ -1425,6 +1499,7 @@
     geoWatch = navigator.geolocation.watchPosition(
       (p) => {
         haveFix = true;
+        meSpeed = p.coords.speed || 0; meAt = Date.now();
         if (manual) return; // user placed the pin by hand; stop following
         setMe(p.coords.latitude, p.coords.longitude, first, p.coords.accuracy);
         // No compass yet (iOS before the first tap)? Use the GPS course while actually moving.
