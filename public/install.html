@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Install Tallinn Live</title>
+<meta name="theme-color" content="#f4efe6">
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" href="/icons/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root { --bg: #f4efe6; --panel: #fffcf7; --text: #2d2a32; --muted: #8a8591; --soft: rgba(45,42,50,0.06); --tram: #ff9a76; --stop: #b7a3e8; --me: #ffc247; --ok: #3fbf86; --shadow: 0 10px 30px rgba(80,60,40,0.14); }
+  * { box-sizing: border-box; }
+  body { margin: 0; min-height: 100dvh; background: var(--bg); color: var(--text); font-family: Nunito, system-ui, sans-serif; display: flex; align-items: center; justify-content: center; padding: 24px 16px calc(24px + env(safe-area-inset-bottom)); -webkit-font-smoothing: antialiased; }
+  .card { width: 100%; max-width: 420px; background: var(--panel); border-radius: 28px; box-shadow: var(--shadow); padding: 28px 22px 22px; text-align: center; }
+  .icon { width: 96px; height: 96px; border-radius: 22px; margin: 0 auto 14px; box-shadow: 0 8px 20px rgba(255,154,118,0.5); display: block; }
+  h1 { margin: 0 0 4px; font-size: 24px; font-weight: 900; letter-spacing: -0.02em; }
+  .sub { color: var(--muted); font-weight: 600; margin: 0 0 20px; font-size: 14px; }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 15px 18px; border-radius: 999px; border: none; font: inherit; font-weight: 900; font-size: 16px; cursor: pointer; background: var(--tram); color: var(--text); box-shadow: 0 8px 22px rgba(255,154,118,0.5); transition: transform .12s; }
+  .btn:hover { transform: translateY(-1px); }
+  .btn.ghost { background: var(--soft); box-shadow: none; margin-top: 10px; font-size: 14px; padding: 12px; }
+  .steps { text-align: left; display: flex; flex-direction: column; gap: 10px; margin: 6px 0 16px; }
+  .step { display: grid; grid-template-columns: 34px 1fr; gap: 12px; align-items: center; background: var(--soft); border-radius: 16px; padding: 12px 14px; font-weight: 700; font-size: 14px; line-height: 1.35; }
+  .step b { width: 34px; height: 34px; border-radius: 50%; background: var(--stop); color: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: 15px; }
+  .step small { display: block; color: var(--muted); font-weight: 600; font-size: 12px; }
+  .ico { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 6px; background: #fff; vertical-align: -6px; margin: 0 2px; box-shadow: 0 1px 3px rgba(0,0,0,0.12); }
+  .ico svg { width: 15px; height: 15px; }
+  .hint { font-size: 12px; color: var(--muted); font-weight: 600; margin: 14px 0 0; line-height: 1.5; }
+  .qr { background: #fff; border-radius: 18px; padding: 14px; display: inline-block; margin: 4px 0 12px; box-shadow: inset 0 0 0 1px rgba(45,42,50,0.06); }
+  .qr svg { display: block; width: 200px; height: 200px; }
+  .mode { display: none; }
+  .mode.on { display: block; }
+  .ok { color: #1f8f5f; }
+  .pulse { animation: pulse 1.8s infinite; }
+  @keyframes pulse { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+  .bottomArrow { position: fixed; left: 50%; bottom: calc(10px + env(safe-area-inset-bottom)); transform: translateX(-50%); font-size: 26px; display: none; }
+  .bottomArrow.on { display: block; }
+</style>
+</head>
+<body>
+<main class="card">
+  <img class="icon" src="/icons/icon-192.png" alt="">
+  <h1>Tallinn Live</h1>
+  <p class="sub">Every bus, tram and trolley, live on your home screen.</p>
+
+  <!-- Android / Chromium: native install prompt -->
+  <section class="mode" id="android">
+    <button class="btn" id="installBtn">📲 Install app</button>
+    <div id="androidManual" style="display:none">
+      <div class="steps">
+        <div class="step"><b>1</b><span>Tap the browser menu <span class="ico">⋮</span><small>top right in Chrome</small></span></div>
+        <div class="step"><b>2</b><span>Choose <strong>Add to Home screen</strong> or <strong>Install app</strong></span></div>
+        <div class="step"><b>3</b><span>Tap <strong>Install</strong></span></div>
+      </div>
+    </div>
+    <a class="btn ghost" href="/">Open in browser instead</a>
+    <p class="hint" id="androidHint"></p>
+  </section>
+
+  <!-- iOS: no API, guided steps -->
+  <section class="mode" id="ios">
+    <div class="steps">
+      <div class="step"><b>1</b><span>Tap <strong>Share</strong>
+        <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#1d7cf2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m8 7 4-4 4 4"/><path d="M5 11v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-8"/></svg></span>
+        <small id="shareWhere">the square-with-arrow button at the bottom of Safari</small></span></div>
+      <div class="step"><b>2</b><span>Scroll down, tap <strong>Add to Home Screen</strong>
+        <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#2d2a32" stroke-width="2" stroke-linecap="round"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M12 8v8M8 12h8"/></svg></span></span></div>
+      <div class="step"><b>3</b><span>Tap <strong>Add</strong> in the top right <small>it opens full screen, like an app</small></span></div>
+    </div>
+    <button class="btn ghost" id="copyBtn">🔗 Copy link</button>
+    <p class="hint" id="iosHint"></p>
+  </section>
+
+  <!-- Desktop: QR to phone -->
+  <section class="mode" id="desktop">
+    <div class="qr" id="qr"></div>
+    <p class="hint">Scan with your phone's camera.<br>Or on this computer, use the browser's install icon in the address bar.</p>
+    <a class="btn ghost" href="/">Open the live map</a>
+  </section>
+
+  <!-- Already installed -->
+  <section class="mode" id="installed">
+    <p class="sub ok" style="font-size:16px">✅ Already on your home screen.</p>
+    <a class="btn" href="/">🚋 Open Tallinn Live</a>
+  </section>
+</main>
+<div class="bottomArrow pulse" id="bottomArrow">👇</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<script>
+(() => {
+  const $ = (s) => document.querySelector(s);
+  const ua = navigator.userAgent;
+  const params = new URLSearchParams(location.search);
+  const force = params.get("os"); // ?os=ios|android|desktop for previewing
+  const isStandalone = matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+  const isIOS = /iPhone|iPad|iPod/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  const isAndroid = /Android/.test(ua);
+  const isSafari = isIOS && /Safari/.test(ua) && !/CriOS|FxiOS|EdgiOS|OPiOS/.test(ua);
+  const inApp = /FBAN|FBAV|Instagram|Line\/|Twitter|LinkedIn|Telegram|WhatsApp/i.test(ua);
+
+  let mode = force || (isStandalone ? "installed" : isIOS ? "ios" : isAndroid ? "android" : "desktop");
+  const show = (m) => { document.querySelectorAll(".mode").forEach((el) => el.classList.toggle("on", el.id === m)); };
+  show(mode);
+
+  // Android: real install prompt when Chrome offers it, manual steps otherwise.
+  let deferred = null;
+  window.addEventListener("beforeinstallprompt", (e) => {
+    e.preventDefault(); deferred = e;
+    $("#installBtn").style.display = ""; $("#androidManual").style.display = "none";
+    $("#androidHint").textContent = "One tap. Opens full screen with its own icon.";
+  });
+  window.addEventListener("appinstalled", () => { show("installed"); });
+  $("#installBtn").addEventListener("click", async () => {
+    if (!deferred) return;
+    deferred.prompt();
+    const { outcome } = await deferred.userChoice;
+    deferred = null;
+    if (outcome !== "accepted") $("#androidHint").textContent = "No problem, you can install it any time from the browser menu.";
+  });
+  if (mode === "android") {
+    // If Chrome does not offer the prompt within a moment, show the manual route.
+    setTimeout(() => { if (!deferred) { $("#installBtn").style.display = "none"; $("#androidManual").style.display = ""; $("#androidHint").textContent = inApp ? "Open this page in Chrome first (in-app browsers can't install)." : ""; } }, 1500);
+  }
+
+  if (mode === "ios") {
+    if (inApp) $("#iosHint").textContent = "You're inside another app's browser. Tap ⋯ and open this page in Safari first.";
+    else if (!isSafari && !force) { $("#iosHint").textContent = "Works in Safari (Chrome on iPhone also has Add to Home Screen under its ⋯ menu)."; $("#shareWhere").textContent = "in Safari it's the square-with-arrow button at the bottom"; }
+    else $("#bottomArrow").classList.add("on");
+    $("#copyBtn").addEventListener("click", async () => {
+      try { await navigator.clipboard.writeText(location.origin + "/"); $("#copyBtn").textContent = "✅ Copied"; } catch { $("#copyBtn").textContent = location.origin; }
+    });
+  }
+
+  if (mode === "desktop") {
+    try {
+      const q = qrcode(0, "M"); q.addData(location.origin + "/install"); q.make();
+      $("#qr").innerHTML = q.createSvgTag({ cellSize: 4, margin: 0, scalable: true });
+    } catch { $("#qr").textContent = location.origin + "/install"; }
+  }
+
+  if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => {});
+})();
+</script>
+</body>
+</html>

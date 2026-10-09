@@ -30,6 +30,7 @@ http
       if (url.pathname === "/api/departures") return json(getDepartures(url.searchParams.get("ids")), "no-store");
 
       let p = url.pathname === "/" ? "/index.html" : url.pathname;
+      if (p === "/install") p = "/install.html";
       p = path.normalize(p).replace(/^(\.\.[\/\\])+/, "");
       const file = path.join(PUBLIC, p);
       if (!file.startsWith(PUBLIC) || !fs.existsSync(file) || fs.statSync(file).isDirectory()) {

@@ -1,10 +1,19 @@
 {
+  "id": "/",
   "name": "Tallinn Live",
   "short_name": "Tallinn Live",
   "description": "Every bus, tram and trolley in Tallinn, live.",
-  "start_url": "/",
+  "start_url": "/?source=pwa",
+  "scope": "/",
   "display": "standalone",
+  "orientation": "portrait",
   "background_color": "#f4efe6",
   "theme_color": "#f4efe6",
-  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+  "lang": "en",
+  "categories": ["navigation", "travel"],
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
 }

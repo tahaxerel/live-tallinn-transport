@@ -9,8 +9,8 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Tallinn Live">
 <link rel="manifest" href="manifest.json">
-<link rel="icon" href="icon.svg" type="image/svg+xml">
-<link rel="apple-touch-icon" href="icon.svg">
+<link rel="icon" href="/icons/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@500;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/5.6.0/maplibre-gl.min.css">
@@ -88,6 +88,8 @@
   #searchBtn.on { background: var(--stop); }
   .brand .right { display: flex; align-items: center; gap: 8px; }
   .chip.stops { display: none; }
+  .chip.install { --c: var(--me); text-decoration: none; }
+  body.standalone .chip.install { display: none !important; }
   @media (max-width: 719px) { .chip.stops { display: inline-flex; --c: var(--stop); } }
 
   .brand { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
@@ -336,6 +338,7 @@
     <button class="chip bus" data-type="bus"><span class="emo">🚌</span>Bus <b id="nBus">0</b></button>
     <button class="chip troll" data-type="troll"><span class="emo">🚎</span>Trolley <b id="nTroll">0</b></button>
     <button class="chip stops" id="stopsChip"><span class="emo">🚏</span>Stops</button>
+    <a class="chip install" id="installChip" href="/install"><span class="emo">📲</span>Install app</a>
   </div>
   <div class="row">
     <label class="toggle"><input type="checkbox" id="stopsToggle" checked> 🚏 Stops · tap for departures</label>
@@ -589,6 +592,10 @@
     const s = Math.max(0, Math.round((Date.now() - lastAt) / 1000));
     $("#updated").textContent = `${shownCount} shown · ${s}s ago`;
   }, 1000);
+
+  // ---------- PWA ----------
+  if (matchMedia("(display-mode: standalone)").matches || navigator.standalone === true) document.body.classList.add("standalone");
+  if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => {});
 
   // ---------- Mobile: search toggle, stops chip, sheet expand ----------
   const isMobile = () => window.matchMedia("(max-width: 719px)").matches;

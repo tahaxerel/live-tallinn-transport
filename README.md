@@ -4,6 +4,7 @@ Real-time map of every bus, tram and trolleybus in Tallinn, built on the public
 `transport.tallinn.ee/gps.txt` feed.
 
 **Live:** https://tallinn-live-plum.vercel.app (deploys automatically from `main`)
+**Install on a phone:** https://tallinn-live-plum.vercel.app/install
 
 ## Run
 
@@ -70,7 +71,11 @@ expand), long-press on the map to place your location, and `watchPosition`
 so the near-me list follows you as you walk. The location marker is
 Google-style: blue dot, GPS accuracy ring, and a compass cone that turns with
 the phone (DeviceOrientation; iOS asks for permission on the first tap). `manifest.json` + `icon.svg`
-let it be added to the home screen as an app.
+let it be added to the home screen as an app. `/install` is the share link for
+that: on Android it fires Chrome's native install prompt (manifest with PNG
+icons + `sw.js`), on iOS, where no API exists, it shows the Share → Add to
+Home Screen steps, and on desktop it shows a QR code. Append `?os=ios`,
+`?os=android` or `?os=desktop` to preview a variant.
 
 Geolocation only works on HTTPS (or localhost). When opened over plain
 `http://<lan-ip>:5180` from a phone the browser blocks it and the page falls
