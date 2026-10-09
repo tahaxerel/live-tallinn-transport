@@ -50,3 +50,16 @@ Transport,RouteNum,ExpectedTimeInSeconds,ScheduleTimeInSeconds,<nowSecOfDay>,ver
 stop,<siriId>
 bus,42,38566,38608,Väike-Õismäe,68,Z     # type,line,expected,scheduled,dest,secondsUntil,lowFloor
 ```
+
+## Mobile
+
+The layout is mobile-first: compact top bar with horizontally scrolling
+filters, bottom sheets for stop departures and "near me" (tap the header to
+expand), long-press on the map to place your location, and `watchPosition`
+so the near-me list follows you as you walk. `manifest.json` + `icon.svg`
+let it be added to the home screen as an app.
+
+Geolocation only works on HTTPS (or localhost). When opened over plain
+`http://<lan-ip>:5180` from a phone the browser blocks it and the page falls
+back to the map centre; long-press still works. Put it behind HTTPS (any
+Node host, or a tunnel) for real on-the-go use.

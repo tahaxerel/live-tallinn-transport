@@ -1,0 +1,10 @@
+{
+  "name": "Tallinn Live",
+  "short_name": "Tallinn Live",
+  "description": "Every bus, tram and trolley in Tallinn, live.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f4efe6",
+  "theme_color": "#f4efe6",
+  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}

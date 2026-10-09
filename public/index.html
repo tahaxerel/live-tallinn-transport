@@ -4,6 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Tallinn Live</title>
+<meta name="theme-color" content="#f4efe6">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Tallinn Live">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@500;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/5.6.0/maplibre-gl.min.css">
@@ -26,6 +33,7 @@
   }
   * { box-sizing: border-box; }
   html, body { height: 100%; margin: 0; }
+  button, input, label, .chip, .item, .dep { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
   body {
     background: var(--bg);
     color: var(--text);
@@ -60,7 +68,22 @@
     padding: 16px 18px 14px;
     display: flex; flex-direction: column; gap: 12px;
   }
-  @media (min-width: 720px) { #top { right: auto; width: 360px; } }
+  @media (min-width: 720px) { #top { right: auto; width: 360px; } #searchBtn { display: none; } }
+  @media (max-width: 719px) {
+    #top { top: calc(10px + env(safe-area-inset-top)); left: 10px; right: 10px; padding: 10px 12px 10px; gap: 10px; }
+    #top .search { display: none; }
+    #top.search-open .search { display: block; }
+    #top .row { display: none; }
+    #top .chips { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin: 0 -12px; padding: 2px 12px 4px; -webkit-overflow-scrolling: touch; }
+    #top .chips::-webkit-scrollbar { display: none; }
+    #top .chip { flex: none; min-height: 40px; }
+    .brand h1 { font-size: 17px; }
+  }
+  #searchBtn { background: var(--soft); border: none; width: 36px; height: 36px; border-radius: 50%; font-size: 16px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; flex: none; }
+  #searchBtn.on { background: var(--stop); }
+  .brand .right { display: flex; align-items: center; gap: 8px; }
+  .chip.stops { display: none; }
+  @media (max-width: 719px) { .chip.stops { display: inline-flex; --c: var(--stop); } }
 
   .brand { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
   .brand h1 { margin: 0; font-size: 19px; font-weight: 900; letter-spacing: -0.02em; display: flex; align-items: center; gap: 8px; }
@@ -114,8 +137,22 @@
   #side > .panel.on { display: flex; }
   #near.on { max-height: 46vh; }
   #stop.on { max-height: 60vh; }
+  .grab { display: none; }
   @media (min-width: 720px) { #near.on, #stop.on { max-height: 100%; flex: 0 1 auto; } }
-  @media (max-width: 719px) { body.stop-open #near { display: none !important; } }
+  @media (max-width: 719px) {
+    #side { left: 0; right: 0; bottom: 0; max-height: 100dvh; gap: 0; }
+    #nearBtn { margin: 0 12px calc(34px + env(safe-area-inset-bottom)) 0; }
+    .maplibregl-ctrl-attrib.maplibregl-compact { border-radius: 999px; margin: 0 6px 6px 0 !important; }
+    #side > .panel { border-radius: 24px 24px 0 0; border-bottom: none; padding-bottom: env(safe-area-inset-bottom); transition: max-height .25s ease; }
+    #near.on, #stop.on { max-height: 52dvh; }
+    #near.on.tall, #stop.on.tall { max-height: 90dvh; }
+    .grab { display: block; width: 40px; height: 5px; border-radius: 3px; background: rgba(45,42,50,0.18); margin: 8px auto 0; flex: none; }
+    .panel header { padding-top: 8px; cursor: pointer; }
+    body.stop-open #near { display: none !important; }
+    body.stop-open #nearBtn { display: none; }
+    .maplibregl-ctrl-bottom-left { display: none; }
+    .maplibregl-ctrl-bottom-right { margin-bottom: calc(2px + env(safe-area-inset-bottom)); }
+  }
 
   #nearBtn {
     display: inline-flex; align-items: center; gap: 8px; pointer-events: auto;
@@ -242,7 +279,10 @@
 <section id="top" class="panel">
   <div class="brand">
     <h1><span class="logo">🚋</span>Tallinn Live</h1>
-    <span class="live" id="live"><i></i><span id="liveText">connecting</span></span>
+    <div class="right">
+      <span class="live" id="live"><i></i><span id="liveText">connecting</span></span>
+      <button id="searchBtn" title="Filter lines">🔍</button>
+    </div>
   </div>
   <div class="search">
     <span class="ico">🔍</span>
@@ -252,6 +292,7 @@
     <button class="chip tram" data-type="tram"><span class="emo">🚋</span>Tram <b id="nTram">0</b></button>
     <button class="chip bus" data-type="bus"><span class="emo">🚌</span>Bus <b id="nBus">0</b></button>
     <button class="chip troll" data-type="troll"><span class="emo">🚎</span>Trolley <b id="nTroll">0</b></button>
+    <button class="chip stops" id="stopsChip"><span class="emo">🚏</span>Stops</button>
   </div>
   <div class="row">
     <label class="toggle"><input type="checkbox" id="stopsToggle" checked> 🚏 Stops · tap for departures</label>
@@ -261,6 +302,7 @@
 
 <div id="side">
   <aside id="stop" class="panel">
+    <div class="grab"></div>
     <header>
       <h2><span class="emo">🚏</span><span id="stopName">Stop</span></h2>
       <div class="right"><span class="sub" id="stopUpdated"></span><button class="iconbtn" id="stopClose" title="Close">✕</button></div>
@@ -269,6 +311,7 @@
   </aside>
 
   <aside id="near" class="panel">
+    <div class="grab"></div>
     <header>
       <h2><span class="emo">📍</span><span>Passing by</span></h2>
       <div class="right"><button class="iconbtn" id="nearClose" title="Close">✕</button></div>
@@ -279,7 +322,7 @@
       <b id="radiusVal">600 m</b>
     </div>
     <div class="list" id="nearList"></div>
-    <div class="hint">Right-click (long-press) the map to move your location.</div>
+    <div class="hint">Long-press (or right-click) the map to move your location.</div>
   </aside>
 
   <button id="nearBtn" title="Show vehicles passing near you">
@@ -313,8 +356,9 @@
   });
   map.touchZoomRotate.disableRotation();
   map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "bottom-left");
-  map.addControl(new maplibregl.AttributionControl({ compact: false, customAttribution: "Data: Tallinna Transport" }), "bottom-right");
+  map.addControl(new maplibregl.AttributionControl({ compact: window.matchMedia("(max-width: 719px)").matches, customAttribution: "Data: Tallinna Transport" }), "bottom-right");
   const ready = new Promise((res) => map.once("load", res));
+  ready.then(() => document.querySelector(".maplibregl-ctrl-attrib")?.classList.remove("maplibregl-compact-show"));
   window.tallinnLive = { map }; // handy for debugging in devtools
 
   // ---------- State ----------
@@ -494,6 +538,48 @@
     $("#updated").textContent = `${shownCount} shown · ${s}s ago`;
   }, 1000);
 
+  // ---------- Mobile: search toggle, stops chip, sheet expand ----------
+  const isMobile = () => window.matchMedia("(max-width: 719px)").matches;
+  $("#searchBtn").addEventListener("click", () => {
+    const open = $("#top").classList.toggle("search-open");
+    $("#searchBtn").classList.toggle("on", open);
+    if (open) $("#q").focus();
+  });
+  $("#stopsChip").addEventListener("click", () => {
+    const cb = $("#stopsToggle");
+    cb.checked = !cb.checked;
+    cb.dispatchEvent(new Event("change"));
+  });
+  const syncStopsChip = () => $("#stopsChip").classList.toggle("off", !$("#stopsToggle").checked);
+  $("#stopsToggle").addEventListener("change", syncStopsChip);
+  syncStopsChip();
+  for (const sel of ["#stop header", "#near header"]) {
+    $(sel).addEventListener("click", (e) => {
+      if (e.target.closest("button")) return;
+      if (isMobile()) $(sel).closest(".panel").classList.toggle("tall");
+    });
+  }
+  // Long-press on touch devices = "move my location here" (contextmenu does not fire on iOS).
+  let pressTimer = null, pressStart = null;
+  const canvas = map.getCanvasContainer();
+  canvas.addEventListener("touchstart", (e) => {
+    if (e.touches.length !== 1) return;
+    const t = e.touches[0]; pressStart = [t.clientX, t.clientY];
+    pressTimer = setTimeout(() => {
+      const rect = canvas.getBoundingClientRect();
+      const ll = map.unproject([pressStart[0] - rect.left, pressStart[1] - rect.top]);
+      if (navigator.vibrate) navigator.vibrate(15);
+      manual = true;
+      setMe(ll.lat, ll.lng, false);
+    }, 550);
+  }, { passive: true });
+  canvas.addEventListener("touchmove", (e) => {
+    if (!pressTimer || !pressStart) return;
+    const t = e.touches[0];
+    if (Math.hypot(t.clientX - pressStart[0], t.clientY - pressStart[1]) > 10) { clearTimeout(pressTimer); pressTimer = null; }
+  }, { passive: true });
+  for (const ev of ["touchend", "touchcancel"]) canvas.addEventListener(ev, () => { clearTimeout(pressTimer); pressTimer = null; }, { passive: true });
+
   // ---------- Filters ----------
   document.querySelectorAll(".chip[data-type]").forEach((b) => {
     b.addEventListener("click", () => {
@@ -534,7 +620,7 @@
       },
     });
     // Invisible, larger hit area so stops are easy to click / tap.
-    map.addLayer({ id: "stops-hit", type: "circle", source: "stops", minzoom: 12.5, paint: { "circle-radius": 14, "circle-opacity": 0, "circle-stroke-opacity": 0 } });
+    map.addLayer({ id: "stops-hit", type: "circle", source: "stops", minzoom: 12.5, paint: { "circle-radius": 18, "circle-opacity": 0, "circle-stroke-opacity": 0 } });
     map.on("mouseenter", "stops-hit", (ev) => {
       map.getCanvas().style.cursor = "pointer";
       const f = ev.features[0];
@@ -646,19 +732,29 @@
     if (meMarker) { meMarker.remove(); meMarker = null; map.removeLayer("me-fill"); map.removeLayer("me-line"); map.removeSource("me-circle"); }
     me = null;
   }
+  let geoWatch = null, manual = false;
+  function stopWatch() { if (geoWatch !== null) { navigator.geolocation.clearWatch(geoWatch); geoWatch = null; } }
   $("#nearBtn").addEventListener("click", () => {
     const label = $("#nearBtn span:last-child");
     const fallback = () => { label.textContent = "Near me"; const c = map.getCenter(); setMe(c.lat, c.lng, false); };
-    if (!navigator.geolocation) return fallback();
+    if (!navigator.geolocation || !window.isSecureContext) return fallback(); // geolocation needs https (or localhost)
     label.textContent = "Locating…";
-    navigator.geolocation.getCurrentPosition(
-      (p) => { label.textContent = "Near me"; setMe(p.coords.latitude, p.coords.longitude, true); },
-      () => fallback(),
-      { enableHighAccuracy: true, timeout: 6000, maximumAge: 15000 }
+    manual = false;
+    let first = true;
+    stopWatch();
+    geoWatch = navigator.geolocation.watchPosition(
+      (p) => {
+        label.textContent = "Near me";
+        if (manual) return; // user placed the pin by hand; stop following
+        setMe(p.coords.latitude, p.coords.longitude, first);
+        first = false;
+      },
+      () => { if (first) fallback(); },
+      { enableHighAccuracy: true, timeout: 8000, maximumAge: 5000 }
     );
   });
-  $("#nearClose").addEventListener("click", closeNear);
-  map.on("contextmenu", (e) => { e.preventDefault(); setMe(e.lngLat.lat, e.lngLat.lng, false); });
+  $("#nearClose").addEventListener("click", () => { stopWatch(); closeNear(); });
+  map.on("contextmenu", (e) => { e.preventDefault(); manual = true; setMe(e.lngLat.lat, e.lngLat.lng, false); });
   $("#radius").addEventListener("input", (e) => {
     radiusM = Number(e.target.value);
     $("#radiusVal").textContent = fmtDist(radiusM);
