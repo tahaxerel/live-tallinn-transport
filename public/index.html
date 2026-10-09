@@ -70,14 +70,18 @@
   }
   @media (min-width: 720px) { #top { right: auto; width: 360px; } #searchBtn { display: none; } }
   @media (max-width: 719px) {
-    #top { top: calc(10px + env(safe-area-inset-top)); left: 10px; right: 10px; padding: 10px 12px 10px; gap: 10px; }
-    #top .search { display: none; }
-    #top.search-open .search { display: block; }
+    #top { top: calc(10px + env(safe-area-inset-top)); left: 10px; right: 10px; padding: 10px 12px 10px; gap: 8px; }
+    #searchBtn { display: none !important; }
     #top .row { display: none; }
-    #top .chips { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin: 0 -12px; padding: 2px 12px 4px; -webkit-overflow-scrolling: touch; }
+    #top .chips { display: none; }
+    #top.search-open .chips { display: flex; }
+    #top .chips { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin: 0 -12px; padding: 0 12px 2px; gap: 6px; -webkit-overflow-scrolling: touch; }
     #top .chips::-webkit-scrollbar { display: none; }
-    #top .chip { flex: none; min-height: 40px; }
-    .brand h1 { font-size: 17px; }
+    #top .chip { flex: none; min-height: 0; height: 26px; padding: 0 9px 0 7px; font-size: 11px; gap: 4px; box-shadow: none; }
+    #top .chip .emo { font-size: 13px; }
+    #top .search input { padding: 9px 12px 9px 36px; font-size: 14px; }
+    .brand h1 { font-size: 16px; }
+    .brand h1 .logo { font-size: 19px; }
   }
   #searchBtn { background: var(--soft); border: none; width: 36px; height: 36px; border-radius: 50%; font-size: 16px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; flex: none; }
   #searchBtn.on { background: var(--stop); }
@@ -548,6 +552,11 @@
     $("#searchBtn").classList.toggle("on", open);
     if (open) $("#q").focus();
   });
+  // On phones the filter chips live under the search box and show only while it is in use.
+  $("#q").addEventListener("focus", () => { if (isMobile()) $("#top").classList.add("search-open"); });
+  const closeSearch = () => { if (isMobile()) { $("#top").classList.remove("search-open"); $("#q").blur(); } };
+  map.getContainer().addEventListener("touchstart", closeSearch, { passive: true });
+  map.on("click", closeSearch);
   $("#stopsChip").addEventListener("click", () => {
     const cb = $("#stopsToggle");
     cb.checked = !cb.checked;
