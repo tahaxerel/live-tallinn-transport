@@ -281,7 +281,24 @@
   .veh.dim > * { opacity: 0.14; }
   .veh.hl .bubble { box-shadow: 0 0 0 4px color-mix(in srgb, var(--c) 45%, transparent), 0 4px 14px rgba(80,60,40,0.3); }
 
-  .me { width: 22px; height: 22px; border-radius: 50%; background: var(--me); border: 3px solid #fff; box-shadow: 0 0 0 6px rgba(255,194,71,0.3), 0 4px 14px rgba(255,194,71,0.6); }
+  :root { --loc: #3b82f6; }
+  .me { position: relative; width: 140px; height: 140px; pointer-events: none; }
+  .me .cone {
+    position: absolute; inset: 0; border-radius: 50%; display: none;
+    background: conic-gradient(from -32deg at 50% 50%, rgba(59,130,246,0.55) 0deg, rgba(59,130,246,0.12) 64deg, transparent 64deg);
+    -webkit-mask-image: radial-gradient(circle at 50% 50%, #000 0, #000 20%, transparent 50%);
+    mask-image: radial-gradient(circle at 50% 50%, #000 0, #000 20%, transparent 50%);
+    transform: rotate(var(--h, 0deg)); transition: transform .12s linear;
+  }
+  .me.heading .cone { display: block; }
+  .me .dot {
+    position: absolute; left: 50%; top: 50%; width: 20px; height: 20px; margin: -10px 0 0 -10px; border-radius: 50%;
+    background: var(--loc); border: 3px solid #fff; box-shadow: 0 2px 10px rgba(59,130,246,0.6);
+  }
+  .me .dot::after { content: ""; position: absolute; inset: -3px; border-radius: 50%; border: 2px solid rgba(59,130,246,0.6); animation: locpulse 2.2s ease-out infinite; }
+  @keyframes locpulse { 0% { transform: scale(1); opacity: .8; } 100% { transform: scale(2.6); opacity: 0; } }
+  .me.manual .dot { background: var(--me); box-shadow: 0 2px 10px rgba(255,194,71,0.7); }
+  .me.manual .dot::after { border-color: rgba(255,194,71,0.6); }
 
   .maplibregl-popup { z-index: 20; max-width: 340px !important; }
   .maplibregl-popup-content { background: var(--panel); color: var(--text); border: 1px solid var(--panel-border); border-radius: 18px; box-shadow: var(--shadow); backdrop-filter: blur(14px); padding: 12px 14px; font: inherit; }
@@ -862,43 +879,89 @@
   }, 1000);
 
   // ---------- Near me ----------
-  async function setMe(lat, lon, fly) {
+  let meEl = null;
+  const EMPTY = { type: "FeatureCollection", features: [] };
+  async function setMe(lat, lon, fly, accuracy = null) {
     await ready;
     me = { lat, lon };
     if (!meMarker) {
-      const el = document.createElement("div"); el.className = "me";
-      meMarker = new maplibregl.Marker({ element: el }).setLngLat([lon, lat]).addTo(map);
+      meEl = document.createElement("div"); meEl.className = "me";
+      meEl.innerHTML = `<div class="cone"></div><div class="dot"></div>`;
+      if (heading != null) { meEl.style.setProperty("--h", heading + "deg"); meEl.classList.add("heading"); }
+      meMarker = new maplibregl.Marker({ element: meEl }).setLngLat([lon, lat]).addTo(map);
+      map.addSource("me-acc", { type: "geojson", data: EMPTY });
+      map.addLayer({ id: "me-acc", type: "fill", source: "me-acc", paint: { "fill-color": "#3b82f6", "fill-opacity": 0.12 } });
       map.addSource("me-circle", { type: "geojson", data: circlePolygon(lat, lon, radiusM) });
-      map.addLayer({ id: "me-fill", type: "fill", source: "me-circle", paint: { "fill-color": "#ffc247", "fill-opacity": 0.12 } });
+      map.addLayer({ id: "me-fill", type: "fill", source: "me-circle", paint: { "fill-color": "#ffc247", "fill-opacity": 0.08 } });
       map.addLayer({ id: "me-line", type: "line", source: "me-circle", paint: { "line-color": "#f0a500", "line-opacity": 0.6, "line-width": 1.5, "line-dasharray": [2, 2] } });
     } else {
       meMarker.setLngLat([lon, lat]);
       map.getSource("me-circle").setData(circlePolygon(lat, lon, radiusM));
     }
+    meEl.classList.toggle("manual", !accuracy);
+    // GPS accuracy ring (Google-style), only for real fixes and only when it is meaningful.
+    map.getSource("me-acc").setData(accuracy && accuracy > 12 && accuracy < 800 ? circlePolygon(lat, lon, accuracy) : EMPTY);
     $("#near").classList.add("on"); $("#nearBtn").classList.add("on");
-    if (fly) map.flyTo({ center: [lon, lat], zoom: Math.max(map.getZoom(), 15), duration: 900 });
+    if (fly) map.flyTo({ center: [lon, lat], zoom: Math.max(map.getZoom(), 16), duration: 900 });
     renderNear();
   }
   function closeNear() {
     $("#near").classList.remove("on"); $("#nearBtn").classList.remove("on");
-    if (meMarker) { meMarker.remove(); meMarker = null; map.removeLayer("me-fill"); map.removeLayer("me-line"); map.removeSource("me-circle"); }
+    if (meMarker) {
+      meMarker.remove(); meMarker = null; meEl = null;
+      for (const id of ["me-fill", "me-line", "me-acc"]) map.removeLayer(id);
+      for (const id of ["me-circle", "me-acc"]) map.removeSource(id);
+    }
     me = null;
+  }
+
+  // ---------- Compass: which way the phone is facing ----------
+  let heading = null, compassOn = false;
+  function onOrientation(e) {
+    let h = null;
+    if (typeof e.webkitCompassHeading === "number" && !Number.isNaN(e.webkitCompassHeading)) h = e.webkitCompassHeading; // iOS, true north
+    else if (typeof e.alpha === "number") {
+      h = (360 - e.alpha) % 360; // Android absolute orientation
+      const so = (screen.orientation && screen.orientation.angle) || window.orientation || 0;
+      h = (h + so + 360) % 360;
+    }
+    if (h == null) return;
+    // Smooth, wrapping around 360.
+    if (heading == null) heading = h;
+    else { let d = ((h - heading + 540) % 360) - 180; heading = (heading + d * 0.3 + 360) % 360; }
+    if (meEl) { meEl.style.setProperty("--h", heading.toFixed(1) + "deg"); meEl.classList.add("heading"); }
+  }
+  window.tallinnLive.compass = { state: () => ({ compassOn, heading }), feed: onOrientation };
+  // Must be called from a user gesture (iOS asks for permission).
+  function startCompass() {
+    if (compassOn) return;
+    const attach = () => {
+      compassOn = true;
+      if ("ondeviceorientationabsolute" in window) window.addEventListener("deviceorientationabsolute", onOrientation);
+      else window.addEventListener("deviceorientation", onOrientation);
+    };
+    try {
+      if (typeof DeviceOrientationEvent !== "undefined" && typeof DeviceOrientationEvent.requestPermission === "function") {
+        DeviceOrientationEvent.requestPermission().then((r) => { if (r === "granted") attach(); }).catch(() => {});
+      } else attach();
+    } catch {}
   }
   let geoWatch = null, manual = false;
   function stopWatch() { if (geoWatch !== null) { navigator.geolocation.clearWatch(geoWatch); geoWatch = null; } }
   $("#nearBtn").addEventListener("click", () => {
     const label = $("#nearBtn span:last-child");
     const fallback = () => { label.textContent = "Near me"; const c = map.getCenter(); setMe(c.lat, c.lng, false); };
-    if (!navigator.geolocation || !window.isSecureContext) return fallback(); // geolocation needs https (or localhost)
+    if (!navigator.geolocation || !window.isSecureContext) { startCompass(); return fallback(); } // geolocation needs https (or localhost)
     label.textContent = "Locating…";
     manual = false;
     let first = true;
+    startCompass();
     stopWatch();
     geoWatch = navigator.geolocation.watchPosition(
       (p) => {
         label.textContent = "Near me";
         if (manual) return; // user placed the pin by hand; stop following
-        setMe(p.coords.latitude, p.coords.longitude, first);
+        setMe(p.coords.latitude, p.coords.longitude, first, p.coords.accuracy);
         first = false;
       },
       () => { if (first) fallback(); },

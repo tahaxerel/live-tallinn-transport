@@ -59,7 +59,9 @@ bus,42,38566,38608,Väike-Õismäe,68,Z     # type,line,expected,scheduled,dest,
 The layout is mobile-first: compact top bar with horizontally scrolling
 filters, bottom sheets for stop departures and "near me" (tap the header to
 expand), long-press on the map to place your location, and `watchPosition`
-so the near-me list follows you as you walk. `manifest.json` + `icon.svg`
+so the near-me list follows you as you walk. The location marker is
+Google-style: blue dot, GPS accuracy ring, and a compass cone that turns with
+the phone (DeviceOrientation; iOS asks for permission on the first tap). `manifest.json` + `icon.svg`
 let it be added to the home screen as an app.
 
 Geolocation only works on HTTPS (or localhost). When opened over plain
