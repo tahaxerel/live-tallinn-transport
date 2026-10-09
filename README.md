@@ -19,7 +19,8 @@ Then open http://localhost:5180. No dependencies, no API keys.
   - `GET /api/stops` → Tallinn city platforms (with SIRI ids) from `data/stops.txt`
   - `GET /api/departures?ids=1280,1322` → upcoming departures for one or more
     platforms, from `siri-stop-departures.php` (live expected vs scheduled time)
-- `public/index.html` — MapLibre GL + OpenFreeMap dark style. Vehicles animate
+- `public/index.html` — MapLibre GL + OpenFreeMap light style, pastel UI with
+  🚋 🚌 🚎 emoji markers (Nunito font, no build step). Vehicles animate
   smoothly between feed updates; heading arrow per vehicle; filter by type or
   line; click a vehicle to highlight its whole line; "Near me" lists vehicles
   within a radius sorted by approaching / moving away (right-click the map to
