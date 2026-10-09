@@ -21,16 +21,19 @@ http
   .createServer(async (req, res) => {
     const url = new URL(req.url, "http://x");
     try {
-      const json = async (body, cache) => {
+      // Resolve the body first so a failing upstream becomes a 502, never a crash or a half-sent response.
+      const json = async (bodyPromise, cache) => {
+        const body = await bodyPromise;
         res.writeHead(200, { "content-type": "application/json", "cache-control": cache });
-        res.end(await body);
+        res.end(body);
       };
-      if (url.pathname === "/api/vehicles") return json(getVehicles(), "no-store");
-      if (url.pathname === "/api/stops") return json(getStops(), "no-cache");
-      if (url.pathname === "/api/departures") return json(getDepartures(url.searchParams.get("ids")), "no-store");
-      if (url.pathname === "/api/plan") return json(plan(url.searchParams.get("from"), url.searchParams.get("to"), url.searchParams.get("time"), url.searchParams.get("arriveBy") === "1"), "no-store");
-      if (url.pathname === "/api/geocode") return json(geocode(url.searchParams.get("q")), "no-cache");
-      if (url.pathname === "/api/trip") return json(trip(url.searchParams.get("id")), "no-cache");
+      const q = (k) => url.searchParams.get(k);
+      if (url.pathname === "/api/vehicles") return await json(getVehicles(), "no-store");
+      if (url.pathname === "/api/stops") return await json(getStops(), "no-cache");
+      if (url.pathname === "/api/departures") return await json(getDepartures(q("ids")), "no-store");
+      if (url.pathname === "/api/plan") return await json(plan(q("from"), q("to"), q("time"), q("arriveBy") === "1"), "no-store");
+      if (url.pathname === "/api/geocode") return await json(geocode(q("q")), "no-cache");
+      if (url.pathname === "/api/trip") return await json(trip(q("id")), "no-cache");
 
       let p = url.pathname === "/" ? "/index.html" : url.pathname;
       if (p === "/install") p = "/install.html";

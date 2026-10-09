@@ -25,6 +25,7 @@
     --tram: #ff9a76;
     --bus: #5fd6ae;
     --troll: #8cbcff;
+    --train: #8fa3c7;
     --me: #ffc247;
     --stop: #b7a3e8;
     --ok: #3fbf86;
@@ -316,6 +317,7 @@
   .tram { --c: var(--tram); }
   .bus { --c: var(--bus); }
   .troll { --c: var(--troll); }
+  .train { --c: var(--train); }
 
   /* ---------- Vehicle markers ---------- */
   .maplibregl-marker { will-change: transform; }
@@ -402,6 +404,7 @@
     <button class="chip tram" data-type="tram"><span class="emo">🚋</span>Tram <b id="nTram">0</b></button>
     <button class="chip bus" data-type="bus"><span class="emo">🚌</span>Bus <b id="nBus">0</b></button>
     <button class="chip troll" data-type="troll"><span class="emo">🚎</span>Trolley <b id="nTroll">0</b></button>
+    <button class="chip train" data-type="train"><span class="emo">🚆</span>Train <b id="nTrain">0</b></button>
     <button class="chip stops" id="stopsChip"><span class="emo">🚏</span>Stops</button>
     <button class="chip" id="dirChip" style="--c: rgba(183,163,232,0.6)"><span class="emo">🧭</span>Directions</button>
     <a class="chip install" id="installChip" href="/install"><span class="emo">📲</span>Install app</a>
@@ -468,8 +471,8 @@
 <script>
 (() => {
   const $ = (s) => document.querySelector(s);
-  const TYPE_LABEL = { tram: "Tram", bus: "Bus", troll: "Trolley" };
-  const EMOJI = { tram: "🚋", bus: "🚌", troll: "🚎" };
+  const TYPE_LABEL = { tram: "Tram", bus: "Bus", troll: "Trolley", train: "Train" };
+  const EMOJI = { tram: "🚋", bus: "🚌", troll: "🚎", train: "🚆" };
   const POLL_MS = 3000;
   const ANIM_MS = 10000; // the feed is rewritten every 10 s, so glide for the full interval
   const STOP_REFRESH_MS = 15000;
@@ -506,7 +509,7 @@
 
   // ---------- State ----------
   const vehicles = new Map(); // id -> { m, el, shown, from, to, t0, data }
-  const enabled = { tram: true, bus: true, troll: true };
+  const enabled = { tram: true, bus: true, troll: true, train: true };
   let lineFilter = new Set();
   let highlightLine = null;
   let lastAt = 0;
@@ -555,6 +558,16 @@
   }
 
   function popupHtml(d) {
+    if (d.type === "train") {
+      const delay = d.delay > 0 ? `<b style="color:#c2512a">${d.delay} min late</b>` : d.status === "hilineb peatuses" ? `<b style="color:#c2512a">held at a stop</b>` : `<b style="color:#1f8f5f">on time</b>`;
+      return `<div class="pop">
+        ${badge(d.type, d.label)}
+        <div><div class="dest">${esc(d.route)}</div>
+        <div class="sm">Train ${esc(d.line)} · ${d.speed} km/h · ${delay}</div>
+        <div class="sm">Last stop: ${esc(d.lastStop || "—")} · ${esc(d.start)}–${esc(d.end)}</div>
+        ${d.note ? `<div class="sm">⚠️ ${esc(d.note)}</div>` : ""}</div>
+      </div>`;
+    }
     return `<div class="pop">
       ${badge(d.type, d.line)}
       <div><div class="dest">→ ${esc(d.dest || "—")}</div>
@@ -566,7 +579,7 @@
     const el = document.createElement("div");
     el.className = `veh ${d.type}`;
     el.style.setProperty("--h", d.heading + "deg");
-    el.innerHTML = `<div class="dir"></div><div class="bubble"><span class="emo">${EMOJI[d.type]}</span></div><div class="pill">${esc(d.line)}</div>`;
+    el.innerHTML = `<div class="dir"></div><div class="bubble"><span class="emo">${EMOJI[d.type]}</span></div><div class="pill">${esc(d.label || d.line)}</div>`;
     const popup = new maplibregl.Popup({ offset: 22, closeButton: false, closeOnClick: true });
     const m = new maplibregl.Marker({ element: el }).setLngLat([d.lon, d.lat]).setPopup(popup);
     const v = { m, el, popup, shown: false, from: [d.lon, d.lat], to: [d.lon, d.lat], t0: performance.now(), data: d };
@@ -600,7 +613,7 @@
         v.t0 = now;
       }
       if (v.data.heading !== d.heading) v.el.style.setProperty("--h", d.heading + "deg");
-      if (v.data.line !== d.line) v.el.querySelector(".pill").textContent = d.line;
+      if ((v.data.label || v.data.line) !== (d.label || d.line)) v.el.querySelector(".pill").textContent = d.label || d.line;
       if (v.data.type !== d.type) { v.el.classList.remove(v.data.type); v.el.classList.add(d.type); v.el.querySelector(".bubble .emo").textContent = EMOJI[d.type]; }
       v.data = d;
       show(v, visible(d));
@@ -630,9 +643,9 @@
   requestAnimationFrame(animate);
 
   function refreshCounts(list) {
-    const c = { tram: 0, bus: 0, troll: 0 };
+    const c = { tram: 0, bus: 0, troll: 0, train: 0 };
     for (const d of list) c[d.type]++;
-    $("#nTram").textContent = c.tram; $("#nBus").textContent = c.bus; $("#nTroll").textContent = c.troll;
+    $("#nTram").textContent = c.tram; $("#nBus").textContent = c.bus; $("#nTroll").textContent = c.troll; $("#nTrain").textContent = c.train;
   }
 
   function refilter() {
@@ -764,7 +777,7 @@
     await ready;
     const j = await (await fetch("/api/stops", { cache: "no-store" })).json();
     stops = j.stops;
-    map.addSource("stops", { type: "geojson", data: { type: "FeatureCollection", features: stops.map((s, i) => ({ type: "Feature", id: i, properties: { name: s.name, i }, geometry: { type: "Point", coordinates: [s.lon, s.lat] } })) } });
+    map.addSource("stops", { type: "geojson", data: { type: "FeatureCollection", features: stops.map((s, i) => ({ type: "Feature", id: i, properties: { name: s.name, i, train: !!s.train }, geometry: { type: "Point", coordinates: [s.lon, s.lat] } })) } });
     map.addSource("stop-sel", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
     map.addLayer({
       id: "stop-sel", type: "circle", source: "stop-sel",
@@ -775,8 +788,17 @@
       layout: { "text-field": ["get", "label"], "text-font": ["Noto Sans Bold"], "text-size": 11, "text-allow-overlap": true, "text-offset": [0, 1.9] },
       paint: { "text-color": "#5b43a6", "text-halo-color": "#fffcf7", "text-halo-width": 1.5 },
     });
+    // Train stations: visible from far out, steel blue, square-ish via stroke.
     map.addLayer({
-      id: "stops", type: "circle", source: "stops", minzoom: 12.5,
+      id: "stations", type: "circle", source: "stops", minzoom: 8, filter: ["==", ["get", "train"], true],
+      paint: {
+        "circle-radius": ["interpolate", ["linear"], ["zoom"], 8, 3, 12, 6, 16, 10],
+        "circle-color": "#8fa3c7", "circle-opacity": 0.95,
+        "circle-stroke-color": "#ffffff", "circle-stroke-width": 2,
+      },
+    });
+    map.addLayer({
+      id: "stops", type: "circle", source: "stops", minzoom: 12.5, filter: ["!=", ["get", "train"], true],
       paint: {
         "circle-radius": ["interpolate", ["linear"], ["zoom"], 12.5, 2.5, 15, 5.5, 18, 9],
         "circle-color": "#b7a3e8", "circle-opacity": ["interpolate", ["linear"], ["zoom"], 12.5, 0.5, 15, 0.95],
@@ -784,11 +806,11 @@
       },
     });
     // Invisible, larger hit area so stops are easy to click / tap.
-    map.addLayer({ id: "stops-hit", type: "circle", source: "stops", minzoom: 12.5, paint: { "circle-radius": 18, "circle-opacity": 0, "circle-stroke-opacity": 0 } });
+    map.addLayer({ id: "stops-hit", type: "circle", source: "stops", minzoom: 8, filter: ["any", ["==", ["get", "train"], true], [">=", ["zoom"], 12.5]], paint: { "circle-radius": 18, "circle-opacity": 0, "circle-stroke-opacity": 0 } });
     map.on("mouseenter", "stops-hit", (ev) => {
       map.getCanvas().style.cursor = "pointer";
       const f = ev.features[0];
-      stopPopup.setLngLat(f.geometry.coordinates).setText("🚏 " + f.properties.name).addTo(map);
+      stopPopup.setLngLat(f.geometry.coordinates).setText((f.properties.train ? "🚆 " : "🚏 ") + f.properties.name).addTo(map);
     });
     map.on("mouseleave", "stops-hit", () => { map.getCanvas().style.cursor = ""; stopPopup.remove(); });
     map.on("click", "stops-hit", (ev) => { openStop(stops[ev.features[0].properties.i]); });
@@ -797,7 +819,7 @@
   }
   loadStops();
   function setStopsVisible(on) {
-    for (const id of ["stops", "stops-hit"]) if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", on ? "visible" : "none");
+    for (const id of ["stops", "stations", "stops-hit"]) if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", on ? "visible" : "none");
   }
   $("#stopsToggle").addEventListener("change", (e) => setStopsVisible(e.target.checked));
 
@@ -867,8 +889,8 @@
     const seq = ++resultSeq;
     box.className = "results on";
     box.innerHTML = top.map((g, i) => `<div class="result" data-i="${i}">
-        <div class="name">🚏 ${esc(g.name)} <small>${g.platforms.length > 1 ? `${g.platforms.length} platforms` : ""}</small></div>
-        <div class="dirs">${g.platforms.map((p) => dirBtnHtml(g, p, null)).join("")}</div>
+        <div class="name">${g.platforms[0].train ? "🚆" : "🚏"} ${esc(g.name)} <small>${g.platforms[0].train ? "train station" : g.platforms.length > 1 ? `${g.platforms.length} platforms` : ""}</small></div>
+        <div class="dirs">${g.platforms[0].train ? "" : g.platforms.map((p) => dirBtnHtml(g, p, null)).join("")}</div>
         <div class="go"><button class="dirgo" data-go="1">🧭 Directions</button></div>
       </div>`).join("") + `<div id="placeResults"></div>`;
     box.querySelectorAll(".result").forEach((row) => {
@@ -900,6 +922,7 @@
     }, 300);
     // Fill in directions as they arrive.
     await Promise.all(top.map(async (g, i) => {
+      if (g.platforms[0].train) return;
       try {
         const dirs = await dirsFor(g);
         if (seq !== resultSeq) return;
@@ -922,6 +945,16 @@
   let lastStopData = null;
 
   function openStop(s, onlySiri = null) {
+    if (s.train) { // Elron station: no live board from the city feed, offer directions instead
+      curStop = { name: s.name, platforms: [s], letters: {}, ids: "", only: null, train: true };
+      lastStopData = null; clearInterval(stopTimer);
+      $("#stopName").textContent = s.name; $("#stopUpdated").textContent = "";
+      $("#stopTabs").className = "tabs"; $("#stopTabs").innerHTML = "";
+      $("#stopList").innerHTML = `<div class="empty">🚆 Elron train station${s.note ? `<br><br>⚠️ ${esc(s.note)}` : ""}<br><br>Tap <b>🧭 Go</b> for train directions here, or tap a train on the map to see where it is.</div>`;
+      $("#stop").classList.add("on"); document.body.classList.add("stop-open");
+      map.getSource("stop-sel").setData({ type: "FeatureCollection", features: [{ type: "Feature", properties: { label: "" }, geometry: { type: "Point", coordinates: [s.lon, s.lat] } }] });
+      return;
+    }
     const g = groupFor(s);
     const { platforms, letters } = g;
     curStop = { ...g, only: onlySiri };
@@ -1009,9 +1042,9 @@
 
   // ---------- Directions (A → B by public transport, via Transitous) ----------
   const dir = { from: null, to: null, active: null, itins: [], sel: -1, pick: null, seq: 0 };
-  const MODE_EMOJI = { bus: "🚌", tram: "🚋", troll: "🚎", rail: "🚆", ferry: "⛴️", walk: "🚶" };
+  const MODE_EMOJI = { bus: "🚌", tram: "🚋", troll: "🚎", train: "🚆", rail: "🚆", ferry: "⛴️", walk: "🚶" };
   const cssVar = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
-  const MODE_COLOR = () => ({ bus: cssVar("--bus"), tram: cssVar("--tram"), troll: cssVar("--troll"), rail: "#9b8bd8", ferry: "#7fc8e8" });
+  const MODE_COLOR = () => ({ bus: cssVar("--bus"), tram: cssVar("--tram"), troll: cssVar("--troll"), train: cssVar("--train"), rail: cssVar("--train"), ferry: "#7fc8e8" });
   const fmtT = (iso) => new Date(iso).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Tallinn" });
   const fmtDur = (sec) => { const m = Math.round(sec / 60); return m >= 60 ? `${Math.floor(m / 60)} h ${m % 60} min` : `${m} min`; };
   const placeFromMe = () => (me && !manual ? { name: "Your location", lat: me.lat, lon: me.lon, isMe: true } : null);
@@ -1072,7 +1105,7 @@
     if (nq.length >= 2 && stops.length) {
       for (const g of allClusters().filter((g) => norm(g.name).includes(nq)).sort((a, b) => (norm(b.name).startsWith(nq) - norm(a.name).startsWith(nq)) || a.name.localeCompare(b.name)).slice(0, 4)) {
         const p = g.platforms[0];
-        rows.push({ emo: "🚏", name: g.name, sub: "stop", pick: () => ({ name: g.name, lat: p.lat, lon: p.lon }) });
+        rows.push({ emo: p.train ? "🚆" : "🚏", name: g.name, sub: p.train ? "train station" : "stop", pick: () => ({ name: g.name, lat: p.lat, lon: p.lon }) });
       }
     }
     renderSugg(rows);
@@ -1300,11 +1333,12 @@
       const { l, t, idx, stopAlong, boardIdx } = tl;
       const boardAlong = stopAlong[boardIdx];
       const line = lineKey(l.line);
+      const isTrain = l.mode === "train";
       let best = null;
       for (const v of vehicles.values()) {
-        if (lineKey(v.data.line) !== line) continue;
+        if (isTrain ? v.data.type !== "train" : lineKey(v.data.line) !== line) continue;
         const pr = projectOnPath(idx, v.data.lon, v.data.lat);
-        if (pr.dist > 90) continue; // not on this route
+        if (pr.dist > (isTrain ? 250 : 90)) continue; // not on this route
         if (angDiff(v.data.heading, pr.bearing) > 70) continue; // going the other way
         if (pr.along > boardAlong + 40) continue; // already past your stop
         if (!best || pr.along > best.along) best = { v, along: pr.along };
@@ -1378,7 +1412,7 @@
     for (const l of it.legs) {
       const path = l.path.length ? l.path : [[l.from.lon, l.from.lat], [l.to.lon, l.to.lat]];
       all = all.concat(path);
-      feats.push({ type: "Feature", properties: { mode: l.mode, color: l.color && l.mode !== "bus" && l.mode !== "tram" && l.mode !== "troll" ? l.color : (colors[l.mode] || "#999") }, geometry: { type: "LineString", coordinates: path } });
+      feats.push({ type: "Feature", properties: { mode: l.mode, color: colors[l.mode] || l.color || "#999" }, geometry: { type: "LineString", coordinates: path } });
       if (l.mode !== "walk") {
         pts.push({ type: "Feature", properties: { color: colors[l.mode] || "#999" }, geometry: { type: "Point", coordinates: [l.from.lon, l.from.lat] } });
         pts.push({ type: "Feature", properties: { color: colors[l.mode] || "#999" }, geometry: { type: "Point", coordinates: [l.to.lon, l.to.lat] } });
@@ -1560,9 +1594,9 @@
     }
     list.innerHTML = rows.map(({ v, d, approaching }) => `
       <div class="item" data-id="${esc(v.data.id)}">
-        ${badge(v.data.type, v.data.line)}
+        ${badge(v.data.type, v.data.label || v.data.line)}
         <div class="meta">
-          <div class="dest">→ ${esc(v.data.dest || "—")}</div>
+          <div class="dest">${v.data.type === "train" ? esc(v.data.route) : "→ " + esc(v.data.dest || "—")}</div>
           <div class="info"><span>${TYPE_LABEL[v.data.type]}</span><span class="tag ${approaching ? "approach" : "away"}">${approaching ? "approaching" : "moving away"}</span></div>
         </div>
         <div class="dist">${fmtDist(d)}<small>${fmtWalk(d)}</small></div>

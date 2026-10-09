@@ -1,7 +1,8 @@
 # Tallinn Live
 
-Real-time map of every bus, tram and trolleybus in Tallinn, built on the public
-`transport.tallinn.ee/gps.txt` feed.
+Real-time map of every bus, tram, trolleybus and Elron train in Tallinn and
+around Estonia, built on the public `transport.tallinn.ee/gps.txt` feed and
+Elron's live map feed.
 
 **Live:** https://tallinn-live-plum.vercel.app (deploys automatically from `main`)
 **Install on a phone:** https://tallinn-live-plum.vercel.app/install
@@ -24,8 +25,11 @@ upstream request. `vercel.json` sets a 10 s function timeout.
 
 - `server.js` — zero-dependency Node server. Serves `public/` and proxies two
   endpoints (the upstream feed has no CORS):
-  - `GET /api/vehicles` → `{ at, vehicles: [{ id, type, line, lat, lon, heading, dest, lowFloor }] }`
-  - `GET /api/stops` → Tallinn city platforms (with SIRI ids) from `data/stops.txt`
+  - `GET /api/vehicles` → `{ at, vehicles: [{ id, type, line, lat, lon, heading, dest, lowFloor }] }`;
+    trains come from `elron.ee/map_data.json` (type `train`, plus `route`,
+    `speed`, `delay`, `lastStop`, `note`) and are merged into the same list
+  - `GET /api/stops` → Tallinn city platforms (with SIRI ids) from `data/stops.txt`,
+    plus the 141 Elron stations from `elron.ee/stops_data.json` (`train: true`)
   - `GET /api/departures?ids=1280,1322` → upcoming departures for one or more
     platforms, from `siri-stop-departures.php` (live expected vs scheduled time)
   - `GET /api/plan?from=lat,lon&to=lat,lon` → public-transport itineraries from
@@ -65,6 +69,15 @@ type,line,lon*1e6,lat*1e6,,heading,vehicleId,lowFloor(Z|false),?,destination
 ```
 
 `type`: 1 = trolleybus, 2 = bus, 3 = tram.
+
+## Trains
+
+Elron publishes its live map data as JSON (`map_data.json`: trip number,
+route like "Tartu-Tallinn", position, heading, speed, delay in minutes, last
+stop, notices). The city SIRI endpoint has no train departures, so stations
+open a note pointing to directions; Transitous already routes with Elron
+(R12, R16, R31 …) and live tracking matches a train to the leg by projecting
+positions onto the railway geometry.
 
 ## Feed cadence
 
