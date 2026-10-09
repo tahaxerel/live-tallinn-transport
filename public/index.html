@@ -225,6 +225,50 @@
   .tag.plat { background: rgba(183,163,232,0.3); color: #5b43a6; min-width: 20px; text-align: center; }
   .hint { font-size: 11px; font-weight: 600; color: var(--muted); padding: 8px 16px 12px; border-top: 1px solid var(--panel-border); flex: none; }
 
+  /* ---------- Directions ---------- */
+  .dirform { padding: 10px 14px 12px; border-bottom: 1px solid var(--panel-border); display: grid; grid-template-columns: 1fr 36px; gap: 6px 8px; align-items: center; flex: none; }
+  .field { display: flex; align-items: center; gap: 8px; background: #fff; border: 1.5px solid var(--panel-border); border-radius: 999px; padding: 0 12px; height: 40px; }
+  .field:focus-within { border-color: var(--stop); box-shadow: 0 0 0 3px rgba(183,163,232,0.25); }
+  .field .pt { width: 12px; height: 12px; border-radius: 50%; flex: none; }
+  .field .pt.a { background: var(--loc); box-shadow: 0 0 0 3px rgba(59,130,246,0.2); }
+  .field .pt.b { background: var(--tram); box-shadow: 0 0 0 3px rgba(255,154,118,0.3); }
+  .field input { border: none; outline: none; background: transparent; font: inherit; font-weight: 700; font-size: 14px; width: 100%; min-width: 0; color: var(--text); }
+  .field input::placeholder { color: var(--muted); font-weight: 600; }
+  .swap { grid-row: 1 / span 2; width: 36px; height: 36px; border-radius: 50%; border: none; background: var(--soft); font: inherit; font-size: 16px; cursor: pointer; }
+  .sugg { grid-column: 1 / -1; display: none; flex-direction: column; gap: 4px; max-height: 230px; overflow-y: auto; }
+  .sugg.on { display: flex; }
+  .sg { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 12px; background: var(--soft); cursor: pointer; font-weight: 700; font-size: 13px; }
+  .sg:hover { background: rgba(45,42,50,0.1); }
+  .sg span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sg small { color: var(--muted); font-weight: 600; font-size: 11px; margin-left: auto; white-space: nowrap; }
+  .sg .emo { flex: none; }
+  .it { display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; padding: 10px 10px; border-radius: 16px; cursor: pointer; }
+  .it:hover { background: var(--soft); }
+  .it.on { background: rgba(183,163,232,0.18); }
+  .it .chain { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; font-weight: 800; font-size: 13px; }
+  .it .chain .arrow { color: var(--muted); font-weight: 600; font-size: 11px; }
+  .it .chain .walk { color: var(--muted); font-weight: 700; font-size: 12px; white-space: nowrap; }
+  .it .time { font-weight: 900; font-size: 16px; text-align: right; white-space: nowrap; letter-spacing: -0.01em; }
+  .it .meta { color: var(--muted); font-weight: 600; font-size: 12px; }
+  .it .meta.r { text-align: right; white-space: nowrap; }
+  .leaves { color: #1f8f5f; font-weight: 800; }
+  .steps2 { grid-column: 1 / -1; display: none; flex-direction: column; padding: 6px 0 2px; }
+  .it.on .steps2 { display: flex; }
+  .lg { display: grid; grid-template-columns: 42px 18px 1fr; gap: 0 8px; padding: 6px 0; }
+  .lg .t { font-weight: 800; font-size: 12px; text-align: right; color: var(--muted); padding-top: 2px; font-variant-numeric: tabular-nums; }
+  .lg .bar { position: relative; }
+  .lg .bar::before { content: ""; position: absolute; left: 50%; top: 10px; bottom: -14px; width: 4px; margin-left: -2px; border-radius: 4px; background: var(--c, #cfc9c0); }
+  .lg.walk .bar::before { width: 0; border-left: 3px dotted #cfc9c0; background: none; margin-left: -1.5px; }
+  .lg.end .bar::before { display: none; }
+  .lg .bar i { position: absolute; left: 50%; top: 2px; width: 10px; height: 10px; margin-left: -5px; border-radius: 50%; background: #fff; border: 3px solid var(--c, #cfc9c0); }
+  .lg .body { font-weight: 700; font-size: 13px; min-width: 0; line-height: 1.3; }
+  .lg .body small { display: block; color: var(--muted); font-weight: 600; font-size: 12px; margin-top: 2px; }
+  .lg .body .badge { vertical-align: middle; margin-right: 4px; }
+  .dirgo { background: var(--soft); border: none; border-radius: 999px; height: 30px; padding: 0 10px; font: inherit; font-weight: 800; font-size: 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; }
+  .dirgo:hover { background: rgba(45,42,50,0.1); }
+  .result .go { margin-top: 2px; }
+  @media (max-width: 719px) { body.dir-open #near, body.dir-open #stop, body.dir-open #nearBtn { display: none !important; } #dir.on { max-height: 56dvh; } #dir.on.tall { max-height: 90dvh; } }
+
   /* ---------- Timeline (stop departures) ---------- */
   .timeline { position: relative; padding: 10px 8px 12px 8px; }
   .timeline::before { content: ""; position: absolute; left: 71px; top: 18px; bottom: 18px; width: 3px; border-radius: 3px; background: linear-gradient(180deg, var(--stop), rgba(183,163,232,0.08)); }
@@ -338,6 +382,7 @@
     <button class="chip bus" data-type="bus"><span class="emo">🚌</span>Bus <b id="nBus">0</b></button>
     <button class="chip troll" data-type="troll"><span class="emo">🚎</span>Trolley <b id="nTroll">0</b></button>
     <button class="chip stops" id="stopsChip"><span class="emo">🚏</span>Stops</button>
+    <button class="chip" id="dirChip" style="--c: rgba(183,163,232,0.6)"><span class="emo">🧭</span>Directions</button>
     <a class="chip install" id="installChip" href="/install"><span class="emo">📲</span>Install app</a>
   </div>
   <div class="row">
@@ -347,11 +392,26 @@
 </section>
 
 <div id="side">
+  <aside id="dir" class="panel">
+    <div class="grab"></div>
+    <header>
+      <h2><span class="emo">🧭</span><span>Directions</span></h2>
+      <div class="right"><button class="iconbtn" id="dirClose" title="Close">✕</button></div>
+    </header>
+    <div class="dirform">
+      <div class="field"><span class="pt a"></span><input id="dirFrom" placeholder="Your location" autocomplete="off" spellcheck="false"></div>
+      <button class="swap" id="dirSwap" title="Swap">⇅</button>
+      <div class="field"><span class="pt b"></span><input id="dirTo" placeholder="Where to?" autocomplete="off" spellcheck="false"></div>
+      <div class="sugg" id="dirSugg"></div>
+    </div>
+    <div class="list" id="dirList"><div class="empty">Pick a destination: tap a stop, search a place, or type above.</div></div>
+  </aside>
+
   <aside id="stop" class="panel">
     <div class="grab"></div>
     <header>
       <h2><span class="emo">🚏</span><span id="stopName">Stop</span></h2>
-      <div class="right"><span class="sub" id="stopUpdated"></span><button class="iconbtn" id="stopClose" title="Close">✕</button></div>
+      <div class="right"><span class="sub" id="stopUpdated"></span><button class="dirgo" id="stopDir" title="Directions to this stop">🧭 Go</button><button class="iconbtn" id="stopClose" title="Close">✕</button></div>
     </header>
     <div class="tabs" id="stopTabs"></div>
     <div class="list" id="stopList"></div>
@@ -409,7 +469,11 @@
   map.on("rotatestart", () => document.body.classList.add("rotating"));
   map.on("rotateend", () => document.body.classList.remove("rotating"));
   map.addControl(new maplibregl.AttributionControl({ compact: window.matchMedia("(max-width: 719px)").matches, customAttribution: "Data: Tallinna Transport" }), "bottom-right");
-  const ready = new Promise((res) => map.once("load", res));
+  // "load" waits for sprites/glyphs too and can hang on flaky mobile networks; the style JSON is enough to add our layers.
+  const ready = new Promise((res) => {
+    map.once("load", res);
+    map.on("styledata", () => { if (map.style?._loaded) res(); });
+  });
   const collapseAttrib = () => document.querySelector(".maplibregl-ctrl-attrib")?.classList.remove("maplibregl-compact-show");
   map.once("load", collapseAttrib); map.once("idle", collapseAttrib); setTimeout(collapseAttrib, 3000);
   window.tallinnLive = { map }; // handy for debugging in devtools
@@ -555,13 +619,15 @@
     highlightLine = highlightLine === line ? null : line;
     applyHighlight();
   }
+  let highlightLines = null; // Set of lines on the chosen route
   function applyHighlight() {
     shownCount = 0;
+    const hl = highlightLines || (highlightLine ? new Set([highlightLine]) : null);
     for (const v of vehicles.values()) {
       if (!v.shown) continue;
       shownCount++;
-      v.el.classList.toggle("dim", !!highlightLine && v.data.line !== highlightLine);
-      v.el.classList.toggle("hl", !!highlightLine && v.data.line === highlightLine);
+      v.el.classList.toggle("dim", !!hl && !hl.has(v.data.line));
+      v.el.classList.toggle("hl", !!hl && hl.has(v.data.line));
     }
   }
   map.on("click", (e) => {
@@ -617,7 +683,7 @@
   const syncStopsChip = () => $("#stopsChip").classList.toggle("off", !$("#stopsToggle").checked);
   $("#stopsToggle").addEventListener("change", syncStopsChip);
   syncStopsChip();
-  for (const sel of ["#stop header", "#near header"]) {
+  for (const sel of ["#stop header", "#near header", "#dir header"]) {
     $(sel).addEventListener("click", (e) => {
       if (e.target.closest("button")) return;
       if (isMobile()) $(sel).closest(".panel").classList.toggle("tall");
@@ -763,27 +829,48 @@
     return `<button class="dirbtn ${list?.length ? "" : "muted"} ${extraClass}" data-siri="${esc(p.siri)}">${multi ? `<b>${g.letters[p.siri]}</b>` : "🚏"}<span>${label}</span></button>`;
   }
   let resultSeq = 0;
+  let geoTimer = null;
   async function renderResults() {
     const box = $("#results");
     const q = norm(stopQuery.trim());
     if (q.length < 2 || !stops.length) { box.className = "results"; box.innerHTML = ""; return; }
     const hits = allClusters().filter((g) => norm(g.name).includes(q));
     hits.sort((a, b) => (norm(b.name).startsWith(q) - norm(a.name).startsWith(q)) || a.name.localeCompare(b.name));
-    const top = hits.slice(0, 5);
+    const top = hits.slice(0, 4);
     const seq = ++resultSeq;
     box.className = "results on";
-    if (!top.length) { box.innerHTML = `<div class="empty" style="padding:10px">No stop called “${esc(stopQuery)}”.</div>`; return; }
     box.innerHTML = top.map((g, i) => `<div class="result" data-i="${i}">
         <div class="name">🚏 ${esc(g.name)} <small>${g.platforms.length > 1 ? `${g.platforms.length} platforms` : ""}</small></div>
         <div class="dirs">${g.platforms.map((p) => dirBtnHtml(g, p, null)).join("")}</div>
-      </div>`).join("");
+        <div class="go"><button class="dirgo" data-go="1">🧭 Directions</button></div>
+      </div>`).join("") + `<div id="placeResults"></div>`;
     box.querySelectorAll(".result").forEach((row) => {
       const g = top[Number(row.dataset.i)];
       row.addEventListener("click", (e) => {
+        if (e.target.closest("[data-go]")) { const p = g.platforms[0]; openDirections({ name: g.name, lat: p.lat, lon: p.lon }); if (isMobile()) closeSearch(); return; }
         const btn = e.target.closest(".dirbtn");
         selectStop(g, btn ? btn.dataset.siri : null);
       });
     });
+    // Places and addresses (debounced): tapping one opens directions.
+    clearTimeout(geoTimer);
+    geoTimer = setTimeout(async () => {
+      try {
+        const j = await (await fetch(`/api/geocode?q=${encodeURIComponent(stopQuery.trim())}`)).json();
+        if (seq !== resultSeq) return;
+        const pr = $("#placeResults"); if (!pr) return;
+        const places = j.results.filter((r) => r.type !== "STOP").slice(0, 4);
+        if (!places.length) { if (!top.length) pr.innerHTML = `<div class="empty" style="padding:10px">Nothing found for “${esc(stopQuery)}”.</div>`; return; }
+        pr.innerHTML = places.map((r, i) => `<div class="result place" data-i="${i}">
+            <div class="name">📍 ${esc(r.name)} <small>${esc(r.area || "")}</small></div>
+            <div class="go"><button class="dirgo">🧭 Directions</button></div>
+          </div>`).join("");
+        pr.querySelectorAll(".result.place").forEach((row) => {
+          const r = places[Number(row.dataset.i)];
+          row.addEventListener("click", () => { openDirections({ name: r.name, lat: r.lat, lon: r.lon }); if (isMobile()) closeSearch(); });
+        });
+      } catch {}
+    }, 300);
     // Fill in directions as they arrive.
     await Promise.all(top.map(async (g, i) => {
       try {
@@ -892,6 +979,222 @@
     if (!curStop || !stopFetchedAt) return;
     $("#stopUpdated").textContent = `${Math.round((Date.now() - stopFetchedAt) / 1000)}s ago`;
   }, 1000);
+
+  // ---------- Directions (A → B by public transport, via Transitous) ----------
+  const dir = { from: null, to: null, active: null, itins: [], sel: -1, pick: null, seq: 0 };
+  const MODE_EMOJI = { bus: "🚌", tram: "🚋", troll: "🚎", rail: "🚆", ferry: "⛴️", walk: "🚶" };
+  const cssVar = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  const MODE_COLOR = () => ({ bus: cssVar("--bus"), tram: cssVar("--tram"), troll: cssVar("--troll"), rail: "#9b8bd8", ferry: "#7fc8e8" });
+  const fmtT = (iso) => new Date(iso).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Tallinn" });
+  const fmtDur = (sec) => { const m = Math.round(sec / 60); return m >= 60 ? `${Math.floor(m / 60)} h ${m % 60} min` : `${m} min`; };
+  const placeFromMe = () => (me && !manual ? { name: "Your location", lat: me.lat, lon: me.lon, isMe: true } : null);
+  const resolvePt = (which) => dir[which] || (which === "from" ? placeFromMe() : null);
+
+  function openDirections(to, from) {
+    if (to !== undefined) dir.to = to;
+    if (from !== undefined) dir.from = from;
+    $("#dirFrom").value = dir.from ? dir.from.name : "";
+    $("#dirTo").value = dir.to ? dir.to.name : "";
+    closeStop();
+    $("#results").className = "results"; $("#results").innerHTML = "";
+    $("#dir").classList.add("on"); document.body.classList.add("dir-open");
+    if (!dir.to) { $("#dirList").innerHTML = `<div class="empty">Where do you want to go?<br>Type a stop, place or address above.</div>`; setTimeout(() => $("#dirTo").focus(), 50); }
+    planNow();
+  }
+  function closeDirections() {
+    $("#dir").classList.remove("on"); document.body.classList.remove("dir-open");
+    hideSugg(); dir.pick = null;
+    clearRoute();
+  }
+  $("#dirClose").addEventListener("click", closeDirections);
+  $("#dirChip").addEventListener("click", () => { openDirections(); if (isMobile()) closeSearch(); });
+  $("#stopDir").addEventListener("click", () => {
+    if (!curStop) return;
+    const p = curStop.platforms.find((x) => x.siri === curStop.only) || curStop.platforms[0];
+    openDirections({ name: curStop.name, lat: p.lat, lon: p.lon });
+  });
+  $("#dirSwap").addEventListener("click", () => {
+    const a = resolvePt("from"), b = dir.to;
+    dir.from = b; dir.to = a && !a.isMe ? a : a ? { ...a, isMe: false } : null;
+    $("#dirFrom").value = dir.from ? dir.from.name : ""; $("#dirTo").value = dir.to ? dir.to.name : "";
+    planNow();
+  });
+
+  // --- suggestions for the two fields ---
+  let suggTimer = null, suggSeq = 0;
+  function hideSugg() { $("#dirSugg").className = "sugg"; $("#dirSugg").innerHTML = ""; }
+  for (const which of ["from", "to"]) {
+    const inp = $(which === "from" ? "#dirFrom" : "#dirTo");
+    inp.addEventListener("focus", () => { dir.active = which; inp.select(); showSugg(which, inp.value); });
+    inp.addEventListener("input", () => { dir[which] = null; showSugg(which, inp.value); });
+  }
+  async function showSugg(which, text) {
+    const box = $("#dirSugg");
+    const q = text.trim();
+    const seq = ++suggSeq;
+    const rows = [];
+    if (which === "from" && placeFromMe()) rows.push({ emo: "📍", name: "Your location", sub: "", pick: () => placeFromMe() });
+    rows.push({ emo: "🗺️", name: "Choose on the map", sub: "", pick: () => { dir.pick = which; hideSugg(); $("#dirList").innerHTML = `<div class="empty">Tap the map to set the ${which === "from" ? "start" : "destination"}.</div>`; return null; } });
+    const nq = norm(q);
+    if (nq.length >= 2 && stops.length) {
+      for (const g of allClusters().filter((g) => norm(g.name).includes(nq)).sort((a, b) => (norm(b.name).startsWith(nq) - norm(a.name).startsWith(nq)) || a.name.localeCompare(b.name)).slice(0, 4)) {
+        const p = g.platforms[0];
+        rows.push({ emo: "🚏", name: g.name, sub: "stop", pick: () => ({ name: g.name, lat: p.lat, lon: p.lon }) });
+      }
+    }
+    renderSugg(rows);
+    if (nq.length < 3) return;
+    clearTimeout(suggTimer);
+    suggTimer = setTimeout(async () => {
+      try {
+        const j = await (await fetch(`/api/geocode?q=${encodeURIComponent(q)}`)).json();
+        if (seq !== suggSeq) return;
+        const seen = new Set();
+        for (const r of j.results.filter((r) => r.type !== "STOP")) {
+          const key = r.name + "|" + r.area; if (seen.has(key)) continue; seen.add(key);
+          rows.push({ emo: "📍", name: r.name, sub: r.area || "", pick: () => ({ name: r.name, lat: r.lat, lon: r.lon }) });
+          if (rows.length > 9) break;
+        }
+        renderSugg(rows);
+      } catch {}
+    }, 250);
+    function renderSugg(list) {
+      box.className = "sugg on";
+      box.innerHTML = list.map((r, i) => `<div class="sg" data-i="${i}"><span class="emo">${r.emo}</span><span>${esc(r.name)}</span><small>${esc(r.sub)}</small></div>`).join("");
+      box.querySelectorAll(".sg").forEach((el) => el.addEventListener("mousedown", (e) => {
+        e.preventDefault();
+        const r = list[Number(el.dataset.i)];
+        const v = r.pick();
+        if (v === null) return;
+        dir[which] = v;
+        $(which === "from" ? "#dirFrom" : "#dirTo").value = v.name;
+        hideSugg(); document.activeElement?.blur();
+        planNow();
+      }));
+    }
+  }
+  document.addEventListener("click", (e) => { if (!e.target.closest(".dirform")) hideSugg(); });
+  map.on("click", (e) => {
+    if (!dir.pick) return;
+    const which = dir.pick; dir.pick = null;
+    dir[which] = { name: "Pinned location", lat: e.lngLat.lat, lon: e.lngLat.lng };
+    $(which === "from" ? "#dirFrom" : "#dirTo").value = "Pinned location";
+    planNow();
+  });
+
+  // --- planning + rendering ---
+  async function planNow() {
+    const a = resolvePt("from"), b = resolvePt("to");
+    if (!b) return;
+    if (!a) { $("#dirList").innerHTML = `<div class="empty">No start yet. Allow location, or tap the start field and choose a place.</div>`; return; }
+    const seq = ++dir.seq;
+    $("#dirList").innerHTML = `<div class="empty">Finding routes…</div>`;
+    try {
+      const j = await (await fetch(`/api/plan?from=${a.lat},${a.lon}&to=${b.lat},${b.lon}`, { cache: "no-store" })).json();
+      if (seq !== dir.seq) return;
+      dir.itins = j.itineraries || [];
+      if (!dir.itins.length) { $("#dirList").innerHTML = `<div class="empty">😕 No public transport route found right now.</div>`; clearRoute(); return; }
+      renderItins();
+      selectItin(0);
+    } catch (e) {
+      if (seq === dir.seq) $("#dirList").innerHTML = `<div class="empty">Couldn't reach the route planner. Try again in a moment.</div>`;
+    }
+  }
+  function chainHtml(it) {
+    return it.legs.map((l) => l.mode === "walk"
+      ? (l.duration >= 60 ? `<span class="walk">🚶 ${Math.round(l.duration / 60)}</span>` : "")
+      : `<span class="badge ${l.mode}"><span class="emo">${MODE_EMOJI[l.mode] || "🚌"}</span>${esc(l.line || "")}</span>`)
+      .filter(Boolean).join(`<span class="arrow">›</span>`);
+  }
+  function renderItins() {
+    const now = Date.now();
+    $("#dirList").innerHTML = dir.itins.map((it, i) => {
+      const leaveMin = Math.round((new Date(it.startTime) - now) / 60000);
+      const firstTransit = it.legs.find((l) => l.mode !== "walk");
+      const leaves = firstTransit ? `<span class="leaves">${leaveMin <= 0 ? "leaves now" : `leaves in ${leaveMin} min`}</span>` : `<span class="leaves">walk</span>`;
+      return `<div class="it" data-i="${i}">
+        <div class="chain">${chainHtml(it)}</div>
+        <div class="time">${fmtT(it.startTime)} – ${fmtT(it.endTime)}</div>
+        <div class="meta">${leaves} · ${it.transfers ? `${it.transfers} transfer${it.transfers > 1 ? "s" : ""}` : "no transfers"}</div>
+        <div class="meta r">${fmtDur(it.duration)}</div>
+        <div class="steps2">${stepsHtml(it)}</div>
+      </div>`;
+    }).join("");
+    $("#dirList").querySelectorAll(".it").forEach((el) => el.addEventListener("click", () => selectItin(Number(el.dataset.i))));
+  }
+  function stepsHtml(it) {
+    const out = [];
+    const A = resolvePt("from")?.name || "start", B = resolvePt("to")?.name || "destination";
+    const nm = (p) => (p.name === "END" ? B : p.name === "START" ? A : p.name);
+    for (const l of it.legs) {
+      if (l.mode === "walk") {
+        if (l.duration < 45) continue;
+        out.push(`<div class="lg walk"><div class="t">${fmtT(l.startTime)}</div><div class="bar"><i></i></div><div class="body">🚶 Walk ${Math.round(l.duration / 60)} min<small>${Math.round(l.distance)} m to ${esc(nm(l.to))}</small></div></div>`);
+      } else {
+        const c = MODE_COLOR()[l.mode] || "#999";
+        out.push(`<div class="lg" style="--c:${c}"><div class="t">${fmtT(l.startTime)}</div><div class="bar"><i></i></div><div class="body"><span class="badge ${l.mode}"><span class="emo">${MODE_EMOJI[l.mode] || "🚌"}</span>${esc(l.line || "")}</span>→ ${esc(l.headsign || l.to.name)}<small>Board at ${esc(nm(l.from))} · ${l.stops.length + 1} stop${l.stops.length ? "s" : ""} · ${fmtDur(l.duration)}</small><small>Get off at ${esc(nm(l.to))} · ${fmtT(l.endTime)}</small></div></div>`);
+      }
+    }
+    const last = it.legs[it.legs.length - 1];
+    out.push(`<div class="lg end"><div class="t">${fmtT(it.endTime)}</div><div class="bar"><i style="--c:var(--tram)"></i></div><div class="body">🏁 Arrive at ${esc(resolvePt("to")?.name || last.to.name)}</div></div>`);
+    return out.join("");
+  }
+  function selectItin(i) {
+    dir.sel = i;
+    $("#dirList").querySelectorAll(".it").forEach((el) => el.classList.toggle("on", Number(el.dataset.i) === i));
+    const it = dir.itins[i];
+    if (!it) return;
+    drawRoute(it);
+    highlightLines = new Set(it.legs.filter((l) => l.mode !== "walk" && l.line).map((l) => l.line));
+    applyHighlight();
+  }
+
+  // --- route on the map ---
+  const EMPTY_FC = { type: "FeatureCollection", features: [] };
+  let routeReady = false;
+  async function ensureRouteLayers() {
+    await ready;
+    if (routeReady) return;
+    routeReady = true;
+    map.addSource("route", { type: "geojson", data: EMPTY_FC });
+    map.addSource("route-pts", { type: "geojson", data: EMPTY_FC });
+    map.addLayer({ id: "route-casing", type: "line", source: "route", filter: ["!=", ["get", "mode"], "walk"], layout: { "line-cap": "round", "line-join": "round" }, paint: { "line-color": "#ffffff", "line-width": 10, "line-opacity": 0.9 } });
+    map.addLayer({ id: "route-line", type: "line", source: "route", filter: ["!=", ["get", "mode"], "walk"], layout: { "line-cap": "round", "line-join": "round" }, paint: { "line-color": ["get", "color"], "line-width": 6 } });
+    map.addLayer({ id: "route-walk", type: "line", source: "route", filter: ["==", ["get", "mode"], "walk"], layout: { "line-cap": "round" }, paint: { "line-color": "#6b6672", "line-width": 4, "line-dasharray": [0.2, 1.6] } });
+    map.addLayer({ id: "route-pts", type: "circle", source: "route-pts", paint: { "circle-radius": 6, "circle-color": "#ffffff", "circle-stroke-color": ["get", "color"], "circle-stroke-width": 3 } });
+  }
+  async function drawRoute(it) {
+    await ensureRouteLayers();
+    const colors = MODE_COLOR();
+    const feats = [], pts = [];
+    let all = [];
+    for (const l of it.legs) {
+      const path = l.path.length ? l.path : [[l.from.lon, l.from.lat], [l.to.lon, l.to.lat]];
+      all = all.concat(path);
+      feats.push({ type: "Feature", properties: { mode: l.mode, color: l.color && l.mode !== "bus" && l.mode !== "tram" && l.mode !== "troll" ? l.color : (colors[l.mode] || "#999") }, geometry: { type: "LineString", coordinates: path } });
+      if (l.mode !== "walk") {
+        pts.push({ type: "Feature", properties: { color: colors[l.mode] || "#999" }, geometry: { type: "Point", coordinates: [l.from.lon, l.from.lat] } });
+        pts.push({ type: "Feature", properties: { color: colors[l.mode] || "#999" }, geometry: { type: "Point", coordinates: [l.to.lon, l.to.lat] } });
+      }
+    }
+    const a = resolvePt("from"), b = resolvePt("to");
+    if (a) pts.push({ type: "Feature", properties: { color: "#3b82f6" }, geometry: { type: "Point", coordinates: [a.lon, a.lat] } });
+    if (b) pts.push({ type: "Feature", properties: { color: cssVar("--tram") }, geometry: { type: "Point", coordinates: [b.lon, b.lat] } });
+    map.getSource("route").setData({ type: "FeatureCollection", features: feats });
+    map.getSource("route-pts").setData({ type: "FeatureCollection", features: pts });
+    if (all.length) {
+      const lons = all.map((c) => c[0]), lats = all.map((c) => c[1]);
+      // Keep the route out from under the panels: top-left card on desktop, bottom sheet on phones.
+      const pad = isMobile()
+        ? { top: 130, bottom: Math.round(window.innerHeight * 0.58), left: 24, right: 24 }
+        : { top: Math.min(300, $("#top").offsetHeight + 40), bottom: 40, left: 40, right: 400 };
+      map.fitBounds([[Math.min(...lons), Math.min(...lats)], [Math.max(...lons), Math.max(...lats)]], { padding: pad, duration: 800, maxZoom: 16 });
+    }
+  }
+  function clearRoute() {
+    if (routeReady) { map.getSource("route").setData(EMPTY_FC); map.getSource("route-pts").setData(EMPTY_FC); }
+    highlightLines = null; applyHighlight();
+  }
 
   // ---------- Near me ----------
   let meEl = null;

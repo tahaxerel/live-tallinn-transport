@@ -28,6 +28,10 @@ upstream request. `vercel.json` sets a 10 s function timeout.
   - `GET /api/stops` → Tallinn city platforms (with SIRI ids) from `data/stops.txt`
   - `GET /api/departures?ids=1280,1322` → upcoming departures for one or more
     platforms, from `siri-stop-departures.php` (live expected vs scheduled time)
+  - `GET /api/plan?from=lat,lon&to=lat,lon` → public-transport itineraries from
+    [Transitous](https://transitous.org) (open MOTIS instance, no key), trimmed
+    to legs, stops and decoded route geometry
+  - `GET /api/geocode?q=...` → places, addresses and stops around Tallinn (Transitous)
 - `public/index.html` — MapLibre GL + OpenFreeMap light style, pastel UI with
   🚋 🚌 🚎 emoji markers (Nunito font, no build step). Vehicles animate
   smoothly between feed updates; heading arrow per vehicle; filter by type or
@@ -38,7 +42,10 @@ upstream request. `vercel.json` sets a 10 s function timeout.
   every 15 s. The search box also finds stops by name; each result lists its
   platforms with the destinations they serve (A → Männiku · Urda, B → Viru …)
   so you can pick the right side of the road, and the stop panel has matching
-  platform tabs.
+  platform tabs. Directions (🧭): A → B by public transport like Google Maps,
+  from your location or any typed place to a stop, address or map pin; shows
+  departure/arrival times, transfers, step-by-step legs, draws the route on the
+  map and highlights the live vehicles of the lines you will ride.
 
 ## Feed format (gps.txt)
 
