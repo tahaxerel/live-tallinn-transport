@@ -389,6 +389,8 @@
   }
   const angDiff = (a, b) => { const d = Math.abs(a - b) % 360; return d > 180 ? 360 - d : d; };
   const fmtDist = (m) => m < 1000 ? `${Math.round(m / 10) * 10} m` : `${(m / 1000).toFixed(1)} km`;
+  const WALK_M_PER_MIN = 80; // ~4.8 km/h
+  const fmtWalk = (m) => `🚶 ${Math.max(1, Math.round(m / WALK_M_PER_MIN))} min`;
   const fmtClock = (sec) => `${String(Math.floor(sec / 3600) % 24).padStart(2, "0")}:${String(Math.floor(sec / 60) % 60).padStart(2, "0")}`;
   const lineKey = (s) => s.trim().toUpperCase();
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -786,7 +788,7 @@
           <div class="dest">→ ${esc(v.data.dest || "—")}</div>
           <div class="info"><span>${TYPE_LABEL[v.data.type]}</span><span class="tag ${approaching ? "approach" : "away"}">${approaching ? "approaching" : "moving away"}</span></div>
         </div>
-        <div class="dist">${fmtDist(d)}<small>${Math.round(v.data.heading)}°</small></div>
+        <div class="dist">${fmtDist(d)}<small>${fmtWalk(d)}</small></div>
       </div>`).join("");
   }
   $("#nearList").addEventListener("click", (e) => {
