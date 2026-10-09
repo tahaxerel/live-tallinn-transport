@@ -621,6 +621,7 @@
       if (navigator.vibrate) navigator.vibrate(15);
       manual = true;
       setMe(ll.lat, ll.lng, false);
+      openNear(false);
     }, 550);
   }, { passive: true });
   canvas.addEventListener("touchmove", (e) => {
@@ -901,18 +902,34 @@
     meEl.classList.toggle("manual", !accuracy);
     // GPS accuracy ring (Google-style), only for real fixes and only when it is meaningful.
     map.getSource("me-acc").setData(accuracy && accuracy > 12 && accuracy < 800 ? circlePolygon(lat, lon, accuracy) : EMPTY);
-    $("#near").classList.add("on"); $("#nearBtn").classList.add("on");
+    syncRadiusRing();
     if (fly) map.flyTo({ center: [lon, lat], zoom: Math.max(map.getZoom(), 16), duration: 900 });
     renderNear();
   }
+  // The dashed search radius is only meaningful while the "Passing by" list is open.
+  function syncRadiusRing() {
+    const on = $("#near").classList.contains("on") ? "visible" : "none";
+    for (const id of ["me-fill", "me-line"]) if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", on);
+  }
+  function openNear(fly) {
+    $("#near").classList.add("on"); $("#nearBtn").classList.add("on");
+    syncRadiusRing();
+    if (fly && me) map.flyTo({ center: [me.lon, me.lat], zoom: Math.max(map.getZoom(), 16), duration: 800 });
+    renderNear();
+  }
+  // Closing the list keeps the location dot and keeps following; it just hides the list.
   function closeNear() {
     $("#near").classList.remove("on"); $("#nearBtn").classList.remove("on");
-    if (meMarker) {
-      meMarker.remove(); meMarker = null; meEl = null;
-      for (const id of ["me-fill", "me-line", "me-acc"]) map.removeLayer(id);
-      for (const id of ["me-circle", "me-acc"]) map.removeSource(id);
+    syncRadiusRing();
+    if (manual) { // a hand-placed pin has no reason to stay
+      manual = false;
+      if (meMarker) {
+        meMarker.remove(); meMarker = null; meEl = null;
+        for (const id of ["me-fill", "me-line", "me-acc"]) map.removeLayer(id);
+        for (const id of ["me-circle", "me-acc"]) map.removeSource(id);
+      }
+      me = null;
     }
-    me = null;
   }
 
   // ---------- Compass: which way the phone is facing ----------
@@ -946,30 +963,42 @@
       } else attach();
     } catch {}
   }
-  let geoWatch = null, manual = false;
+  let geoWatch = null, manual = false, haveFix = false;
+  const canLocate = () => !!navigator.geolocation && window.isSecureContext; // geolocation needs https (or localhost)
   function stopWatch() { if (geoWatch !== null) { navigator.geolocation.clearWatch(geoWatch); geoWatch = null; } }
-  $("#nearBtn").addEventListener("click", () => {
-    const label = $("#nearBtn span:last-child");
-    const fallback = () => { label.textContent = "Near me"; const c = map.getCenter(); setMe(c.lat, c.lng, false); };
-    if (!navigator.geolocation || !window.isSecureContext) { startCompass(); return fallback(); } // geolocation needs https (or localhost)
-    label.textContent = "Locating…";
-    manual = false;
+  // Follow the phone. onFirst runs on the first fix, onFail if we never get one.
+  function startWatch(onFirst, onFail) {
     let first = true;
-    startCompass();
     stopWatch();
     geoWatch = navigator.geolocation.watchPosition(
       (p) => {
-        label.textContent = "Near me";
+        haveFix = true;
         if (manual) return; // user placed the pin by hand; stop following
         setMe(p.coords.latitude, p.coords.longitude, first, p.coords.accuracy);
+        if (first) onFirst?.();
         first = false;
       },
-      () => { if (first) fallback(); },
-      { enableHighAccuracy: true, timeout: 8000, maximumAge: 5000 }
+      () => { if (first) onFail?.(); },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 }
     );
+  }
+  // On load: ask for location straight away and show the blue dot, no list yet.
+  ready.then(() => { if (canLocate()) startWatch(); });
+
+  $("#nearBtn").addEventListener("click", () => {
+    const label = $("#nearBtn span:last-child");
+    startCompass(); // needs a tap on iOS
+    const fallback = () => { label.textContent = "Near me"; manual = true; const c = map.getCenter(); setMe(c.lat, c.lng, false); openNear(false); };
+    if (!canLocate()) return fallback();
+    if (me && !manual) return openNear(true); // already located: open the list right away
+    label.textContent = "Locating…";
+    manual = false;
+    startWatch(() => { label.textContent = "Near me"; openNear(false); }, fallback);
   });
-  $("#nearClose").addEventListener("click", () => { stopWatch(); closeNear(); });
-  map.on("contextmenu", (e) => { e.preventDefault(); manual = true; setMe(e.lngLat.lat, e.lngLat.lng, false); });
+  $("#nearClose").addEventListener("click", closeNear);
+  map.on("contextmenu", (e) => { e.preventDefault(); manual = true; setMe(e.lngLat.lat, e.lngLat.lng, false); openNear(false); });
+  // Compass needs a user gesture on iOS: start it on the first touch anywhere.
+  document.addEventListener("touchend", () => startCompass(), { once: true, passive: true });
   $("#radius").addEventListener("input", (e) => {
     radiusM = Number(e.target.value);
     $("#radiusVal").textContent = fmtDist(radiusM);
