@@ -58,7 +58,7 @@ async function getStops() {
   let prevName = "", prevArea = "", prevCity = "";
   for (const l of lines) {
     const f = l.split(";");
-    if (f.length < 6) continue;
+    if (f.length < 5) continue; // 5-field rows are extra platforms inheriting the previous name
     const name = f[5] || prevName;
     const area = f[8] || prevArea;
     const city = f[9] || prevCity;

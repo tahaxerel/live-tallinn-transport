@@ -718,6 +718,12 @@
     dirCache.set(g.ids, { at: Date.now(), dirs });
     return dirs;
   }
+  // Once departures are known, hide platforms that serve nothing (big hubs list spare bays).
+  function activePlatforms(g, dirs) {
+    if (!dirs) return g.platforms;
+    const live = g.platforms.filter((p) => dirs[p.siri]?.length);
+    return live.length ? live : g.platforms;
+  }
   function dirBtnHtml(g, p, dirs, extraClass = "") {
     const list = dirs?.[p.siri];
     const multi = g.platforms.length > 1;
@@ -752,7 +758,7 @@
         const dirs = await dirsFor(g);
         if (seq !== resultSeq) return;
         const row = box.querySelector(`.result[data-i="${i}"] .dirs`);
-        if (row) row.innerHTML = g.platforms.map((p) => dirBtnHtml(g, p, dirs)).join("");
+        if (row) row.innerHTML = activePlatforms(g, dirs).map((p) => dirBtnHtml(g, p, dirs)).join("");
       } catch {}
     }));
   }
@@ -812,7 +818,7 @@
     const dirs = platformDirs(j.departures);
     tabs.className = "tabs on";
     tabs.innerHTML = `<button class="dirbtn ${curStop.only ? "" : "on"}" data-siri=""><span>All</span></button>` +
-      curStop.platforms.map((p) => dirBtnHtml(curStop, p, dirs, curStop.only === p.siri ? "on" : "")).join("");
+      activePlatforms(curStop, dirs).map((p) => dirBtnHtml(curStop, p, dirs, curStop.only === p.siri ? "on" : "")).join("");
     tabs.querySelector(".dirbtn.on")?.scrollIntoView({ inline: "nearest", block: "nearest" });
     tabs.querySelectorAll(".dirbtn").forEach((b) => b.addEventListener("click", () => {
       curStop.only = b.dataset.siri || null;
