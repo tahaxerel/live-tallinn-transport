@@ -100,6 +100,13 @@ stop,<siriId>
 bus,42,38566,38608,Väike-Õismäe,68,Z     # type,line,expected,scheduled,dest,secondsUntil,lowFloor
 ```
 
+## Languages
+
+Estonian and English. The default follows the device language (`et` →
+Estonian, anything else → English); the ET/EN button in the header switches
+and remembers the choice. All UI strings live in one dictionary in
+`public/index.html` (`I18N`), so adding a language is one more block.
+
 ## Favourites
 
 Tap ♡ in a stop panel or on a vehicle card to favourite a stop or a line

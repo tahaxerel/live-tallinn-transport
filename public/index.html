@@ -85,6 +85,8 @@
     .brand h1 { font-size: 16px; }
     .brand h1 .logo { font-size: 19px; }
   }
+  .langbtn { background: var(--soft); border: none; height: 28px; padding: 0 9px; border-radius: 999px; font: inherit; font-size: 11px; font-weight: 900; letter-spacing: .06em; color: var(--muted); cursor: pointer; }
+  .langbtn:hover { color: var(--text); }
   #searchBtn { background: var(--soft); border: none; width: 36px; height: 36px; border-radius: 50%; font-size: 16px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; flex: none; }
   #searchBtn.on { background: var(--stop); }
   .brand .right { display: flex; align-items: center; gap: 8px; }
@@ -418,28 +420,29 @@
   <div class="brand">
     <h1><span class="logo">🚋</span>Tallinn Live</h1>
     <div class="right">
-      <span class="live" id="live"><i></i><span id="liveText">connecting</span></span>
+      <span class="live" id="live"><i></i><span id="liveText" data-i18n="connecting">connecting</span></span>
+      <button id="langBtn" class="langbtn" title="Keel / Language">ET</button>
       <button id="searchBtn" title="Filter lines">🔍</button>
     </div>
   </div>
   <div class="search">
     <span class="ico">🔍</span>
-    <input id="q" type="search" placeholder="Line or stop · e.g. T4, 8, Risti" autocomplete="off" spellcheck="false">
+    <input id="q" type="search" data-i18n-ph="searchPh" placeholder="Line or stop · e.g. T4, 8, Risti" autocomplete="off" spellcheck="false">
   </div>
   <div class="results" id="results"></div>
   <div class="favs" id="favs"></div>
   <div class="chips">
-    <button class="chip tram" data-type="tram"><span class="emo">🚋</span>Tram <b id="nTram">0</b></button>
-    <button class="chip bus" data-type="bus"><span class="emo">🚌</span>Bus <b id="nBus">0</b></button>
-    <button class="chip troll" data-type="troll"><span class="emo">🚎</span>Trolley <b id="nTroll">0</b></button>
-    <button class="chip train" data-type="train"><span class="emo">🚆</span>Train <b id="nTrain">0</b></button>
-    <button class="chip fav off" id="favChip" title="Show only your favourites"><span class="emo">❤️</span>Favorites <b id="nFav">0</b></button>
-    <button class="chip stops" id="stopsChip"><span class="emo">🚏</span>Stops</button>
-    <button class="chip" id="dirChip" style="--c: rgba(183,163,232,0.6)"><span class="emo">🧭</span>Directions</button>
-    <a class="chip install" id="installChip" href="/install"><span class="emo">📲</span>Install app</a>
+    <button class="chip tram" data-type="tram"><span class="emo">🚋</span><span data-i18n="tram">Tram</span> <b id="nTram">0</b></button>
+    <button class="chip bus" data-type="bus"><span class="emo">🚌</span><span data-i18n="bus">Bus</span> <b id="nBus">0</b></button>
+    <button class="chip troll" data-type="troll"><span class="emo">🚎</span><span data-i18n="troll">Trolley</span> <b id="nTroll">0</b></button>
+    <button class="chip train" data-type="train"><span class="emo">🚆</span><span data-i18n="train">Train</span> <b id="nTrain">0</b></button>
+    <button class="chip fav off" id="favChip"><span class="emo">❤️</span><span data-i18n="favorites">Favorites</span> <b id="nFav">0</b></button>
+    <button class="chip stops" id="stopsChip"><span class="emo">🚏</span><span data-i18n="stops">Stops</span></button>
+    <button class="chip" id="dirChip" style="--c: rgba(183,163,232,0.6)"><span class="emo">🧭</span><span data-i18n="directions">Directions</span></button>
+    <a class="chip install" id="installChip" href="/install"><span class="emo">📲</span><span data-i18n="installApp">Install app</span></a>
   </div>
   <div class="row">
-    <label class="toggle"><input type="checkbox" id="stopsToggle" checked> 🚏 Stops · tap for departures</label>
+    <label class="toggle"><input type="checkbox" id="stopsToggle" checked> 🚏 <span data-i18n="stopsToggle">Stops · tap for departures</span></label>
     <span class="sub" id="updated">—</span>
   </div>
 </section>
@@ -448,28 +451,28 @@
   <aside id="dir" class="panel">
     <div class="grab"></div>
     <header>
-      <h2><span class="emo">🧭</span><span>Directions</span></h2>
+      <h2><span class="emo">🧭</span><span data-i18n="directions">Directions</span></h2>
       <div class="right"><button class="iconbtn" id="dirClose" title="Close">✕</button></div>
     </header>
     <div class="dirform">
       <div class="rail"><span class="o"></span><span class="dots"></span><span class="pin"></span></div>
       <div class="fields">
-        <input id="dirFrom" placeholder="Choose starting point" autocomplete="off" spellcheck="false">
-        <input id="dirTo" placeholder="Choose destination" autocomplete="off" spellcheck="false">
+        <input id="dirFrom" data-i18n-ph="chooseStart" placeholder="Choose starting point" autocomplete="off" spellcheck="false">
+        <input id="dirTo" data-i18n-ph="chooseDest" placeholder="Choose destination" autocomplete="off" spellcheck="false">
       </div>
       <button class="swap" id="dirSwap" title="Swap start and destination">⇅</button>
-      <div class="dirmeta"><span>🕒 Leaving now</span><span>🚌 Public transport</span></div>
+      <div class="dirmeta"><span>🕒 <span data-i18n="leavingNow">Leaving now</span></span><span>🚌 <span data-i18n="publicTransport">Public transport</span></span></div>
       <div class="sugg" id="dirSugg"></div>
     </div>
     <div class="ride" id="ride"></div>
-    <div class="list" id="dirList"><div class="empty">Pick a destination: tap a stop, search a place, or type above.</div></div>
+    <div class="list" id="dirList"><div class="empty" data-i18n="dirEmpty">Pick a destination: tap a stop, search a place, or type above.</div></div>
   </aside>
 
   <aside id="stop" class="panel">
     <div class="grab"></div>
     <header>
       <h2><span class="emo">🚏</span><span id="stopName">Stop</span></h2>
-      <div class="right"><span class="sub" id="stopUpdated"></span><button class="favbtn" id="stopFav" title="Favourite this stop">♡</button><button class="dirgo" id="stopDir" title="Directions to this stop">🧭 Go</button><button class="iconbtn" id="stopClose" title="Close">✕</button></div>
+      <div class="right"><span class="sub" id="stopUpdated"></span><button class="favbtn" id="stopFav" title="Favourite this stop">♡</button><button class="dirgo" id="stopDir">🧭 <span data-i18n="go">Go</span></button><button class="iconbtn" id="stopClose" title="Close">✕</button></div>
     </header>
     <div class="tabs" id="stopTabs"></div>
     <div class="list" id="stopList"></div>
@@ -478,31 +481,31 @@
   <aside id="near" class="panel">
     <div class="grab"></div>
     <header>
-      <h2><span class="emo">📍</span><span>Passing by</span></h2>
+      <h2><span class="emo">📍</span><span data-i18n="passingBy">Passing by</span></h2>
       <div class="right"><button class="iconbtn" id="nearClose" title="Close">✕</button></div>
     </header>
     <div class="radius">
-      <span>Radius</span>
+      <span data-i18n="radius">Radius</span>
       <input type="range" id="radius" min="200" max="2000" step="100" value="600">
       <b id="radiusVal">600 m</b>
     </div>
     <div class="list" id="nearList"></div>
-    <div class="hint">Long-press (or right-click) the map to move your location.</div>
+    <div class="hint" data-i18n="longPressHint">Long-press (or right-click) the map to move your location.</div>
   </aside>
 
   <button id="nearBtn" title="Show vehicles passing near you">
     <span class="emo">📍</span>
-    <span>Near me</span>
+    <span data-i18n="nearMe">Near me</span>
   </button>
 </div>
 
 <div class="onb" id="onb">
   <div class="card">
     <div class="big">📍</div>
-    <h3>See what's around you</h3>
-    <p>Tallinn Live uses your location to show the vehicles passing by, and your phone's compass to show which way you're facing. Your phone will ask once for each. Nothing is stored or sent anywhere.</p>
-    <button class="btn" id="onbGo">Turn on location &amp; compass</button>
-    <button class="later" id="onbLater">Not now</button>
+    <h3 data-i18n="onbTitle">See what's around you</h3>
+    <p data-i18n="onbBody">Tallinn Live uses your location to show the vehicles passing by, and your phone's compass to show which way you're facing. Your phone will ask once for each. Nothing is stored or sent anywhere.</p>
+    <button class="btn" id="onbGo" data-i18n="onbGo">Turn on location &amp; compass</button>
+    <button class="later" id="onbLater" data-i18n="onbLater">Not now</button>
   </div>
 </div>
 
@@ -510,7 +513,79 @@
 <script>
 (() => {
   const $ = (s) => document.querySelector(s);
-  const TYPE_LABEL = { tram: "Tram", bus: "Bus", troll: "Trolley", train: "Train" };
+
+  // ---------- Languages ----------
+  const I18N = {
+    en: {
+      connecting: "connecting", live: "live", offline: "offline",
+      searchPh: "Line or stop · e.g. T4, 8, Risti",
+      tram: "Tram", bus: "Bus", troll: "Trolley", train: "Train", favorites: "Favorites", stops: "Stops", directions: "Directions", installApp: "Install app",
+      stopsToggle: "Stops · tap for departures", shownAgo: "{n} shown · {s}s ago", ago: "{s}s ago",
+      chooseStart: "Choose starting point", chooseDest: "Choose destination", leavingNow: "Leaving now", publicTransport: "Public transport",
+      dirEmpty: "Pick a destination: tap a stop, search a place, or type above.", whereTo: "Where do you want to go?<br>Type a stop, place or address above.",
+      go: "Go", passingBy: "Passing by", radius: "Radius", longPressHint: "Long-press (or right-click) the map to move your location.", nearMe: "Near me", locating: "Locating…",
+      onbTitle: "See what's around you", onbBody: "Tallinn Live uses your location to show the vehicles passing by, and your phone's compass to show which way you're facing. Your phone will ask once for each. Nothing is stored or sent anywhere.", onbGo: "Turn on location & compass", onbLater: "Not now",
+      vehicle: "vehicle", lowFloor: "♿ low floor", lastStop: "Last stop", onTime: "on time", heldAtStop: "held at a stop", late: "{n} min late", early: "{n} min early", trainN: "Train {n}",
+      loadingDepartures: "Loading departures…", noDepartures: "No upcoming departures from {name}.", platform: "platform", departuresFailed: "Couldn't load departures.<br>Retrying shortly.", timetable: "timetable", cancelled: "cancelled", now: "now", min: "min",
+      loadingTrains: "Loading trains…", noMoreTrains: "No more trains from {name} today.", trainStation: "train station", noDeps: "no departures",
+      noStopCalled: "No stop called “{q}”.", nothingFound: "Nothing found for “{q}”.", platforms: "{n} platforms",
+      yourLocation: "Your location", chooseOnMap: "Choose on the map", tapMapFor: "Tap the map to set the {what}.", theStart: "start", theDestination: "destination", stop: "stop", pinned: "Pinned location",
+      noStartYet: "No start yet. Allow location, or tap the start field and choose a place.", findingRoutes: "Finding routes…", noRoute: "😕 No public transport route found right now.", plannerDown: "Couldn't reach the route planner. Try again in a moment.",
+      leavesNow: "leaves now", leavesIn: "leaves in {n} min", walk: "walk", noTransfers: "no transfers", transfer: "1 transfer", transfers: "{n} transfers",
+      walkMin: "🚶 Walk {n} min", mTo: "{m} m to {name}", boardAt: "Board at {name}", stopsN: "{n} stop", stopsNp: "{n} stops", getOffAt: "Get off at {name}", arriveAt: "🏁 Arrive at {name}",
+      notOnRoad: "⚪ Not on the road yet", noLivePos: "⚪ No live position for this one yet", scheduled: "scheduled {t}",
+      liveIs: "Live: {line} is {where} · here in ~{n} min ({t}, {status})", atYourStop: "at your stop now", nextIsYours: "next stop is yours", stopsAway: "{n} stops away",
+      tooTight: "⚠️ Too tight: it reaches {name} {n} min before you can. Check the next option.", leaveRightNow: "🏃 Leave right now, it's close.", leaveNow: "🚶 Leave now and you'll have {n} min to spare.", onThisOne: "You're on this one.",
+      onBoard: "🚌 On board {line} · {n} stops left", nextGetOff: "Next: {next} · get off at {name} ({t})", nextIsYoursBig: "🔔 Next stop is yours: {name}", getReady: "Get ready to get off · {then}", thisIs: "🏁 This is {name} — get off here.", then: "Then {then}",
+      thenWalkTake: "walk {n} min and take {line} → {to}", walkTo: "walk {n} min to {name}", yourThere: "you're there", yourDestination: "your destination", notifTitle: "🔔 Get off at the next stop", nextStopTitle: "🔔 Next stop: {name}",
+      approaching: "approaching", movingAway: "moving away", nothingWithin: "🍃 Nothing within {r} right now.<br>Widen the radius or wait a moment.",
+      noFavs: "No favourites yet. Tap ♡ on a stop or on a vehicle's card.", favStops: "❤️ Stops", favLines: "❤️ Lines", remove: "Remove",
+      elronStation: "🚆 Elron train station", swap: "Swap start and destination",
+    },
+    et: {
+      connecting: "ühendan", live: "otse", offline: "ühenduseta",
+      searchPh: "Liin või peatus · nt T4, 8, Risti",
+      tram: "Tramm", bus: "Buss", troll: "Troll", train: "Rong", favorites: "Lemmikud", stops: "Peatused", directions: "Teekond", installApp: "Lisa avakuvale",
+      stopsToggle: "Peatused · puuduta väljumiste nägemiseks", shownAgo: "{n} kuvatud · {s} s tagasi", ago: "{s} s tagasi",
+      chooseStart: "Vali alguspunkt", chooseDest: "Vali sihtkoht", leavingNow: "Väljub kohe", publicTransport: "Ühistransport",
+      dirEmpty: "Vali sihtkoht: puuduta peatust, otsi kohta või kirjuta ülal.", whereTo: "Kuhu soovid minna?<br>Kirjuta ülal peatus, koht või aadress.",
+      go: "Mine", passingBy: "Lähedal", radius: "Raadius", longPressHint: "Vajuta kaardil pikalt, et oma asukohta liigutada.", nearMe: "Minu lähedal", locating: "Otsin asukohta…",
+      onbTitle: "Vaata, mis sinu ümber liigub", onbBody: "Tallinn Live kasutab sinu asukohta, et näidata mööduvaid sõidukeid, ja telefoni kompassi, et näidata, kuhupoole sa vaatad. Telefon küsib kummagi jaoks luba ühe korra. Midagi ei salvestata ega saadeta.", onbGo: "Luba asukoht ja kompass", onbLater: "Mitte praegu",
+      vehicle: "sõiduk", lowFloor: "♿ madalapõhjaline", lastStop: "Viimane peatus", onTime: "graafikus", heldAtStop: "seisab peatuses", late: "{n} min hilinemisega", early: "{n} min varem", trainN: "Rong {n}",
+      loadingDepartures: "Laen väljumisi…", noDepartures: "Peatusest {name} pole lähiajal väljumisi.", platform: "platvorm", departuresFailed: "Väljumisi ei õnnestunud laadida.<br>Proovin varsti uuesti.", timetable: "sõiduplaan", cancelled: "tühistatud", now: "nüüd", min: "min",
+      loadingTrains: "Laen ronge…", noMoreTrains: "Jaamast {name} täna rohkem ronge ei välju.", trainStation: "raudteejaam", noDeps: "väljumisi pole",
+      noStopCalled: "Peatust „{q}” ei leitud.", nothingFound: "Otsingule „{q}” ei leitud midagi.", platforms: "{n} platvormi",
+      yourLocation: "Minu asukoht", chooseOnMap: "Vali kaardilt", tapMapFor: "Puuduta kaarti, et määrata {what}.", theStart: "alguspunkt", theDestination: "sihtkoht", stop: "peatus", pinned: "Märgitud asukoht",
+      noStartYet: "Alguspunkti pole. Luba asukoht või puuduta algusvälja ja vali koht.", findingRoutes: "Otsin teekondi…", noRoute: "😕 Praegu ühistranspordi teekonda ei leitud.", plannerDown: "Reisiplaneerijaga ei saanud ühendust. Proovi hetke pärast uuesti.",
+      leavesNow: "väljub kohe", leavesIn: "väljub {n} min pärast", walk: "jalgsi", noTransfers: "ümberistumisteta", transfer: "1 ümberistumine", transfers: "{n} ümberistumist",
+      walkMin: "🚶 Kõnni {n} min", mTo: "{m} m kuni {name}", boardAt: "Peale peatuses {name}", stopsN: "{n} peatus", stopsNp: "{n} peatust", getOffAt: "Maha peatuses {name}", arriveAt: "🏁 Kohal: {name}",
+      notOnRoad: "⚪ Pole veel teel", noLivePos: "⚪ Selle sõiduki asukohta veel pole", scheduled: "graafik {t}",
+      liveIs: "Otse: {line} {where} · siin ~{n} min pärast ({t}, {status})", atYourStop: "on praegu sinu peatuses", nextIsYours: "järgmine peatus on sinu oma", stopsAway: "on {n} peatuse kaugusel",
+      tooTight: "⚠️ Ei jõua: see jõuab peatusesse {name} {n} min enne sind. Vaata järgmist varianti.", leaveRightNow: "🏃 Mine kohe, aega on napilt.", leaveNow: "🚶 Mine nüüd, varuaega on {n} min.", onThisOne: "Sa oled selle peal.",
+      onBoard: "🚌 Sõidad liiniga {line} · {n} peatust jäänud", nextGetOff: "Järgmine: {next} · maha peatuses {name} ({t})", nextIsYoursBig: "🔔 Järgmine peatus on sinu oma: {name}", getReady: "Valmistu väljumiseks · {then}", thisIs: "🏁 See on {name} – välju siin.", then: "Seejärel {then}",
+      thenWalkTake: "kõnni {n} min ja võta {line} → {to}", walkTo: "kõnni {n} min kuni {name}", yourThere: "oled kohal", yourDestination: "sihtkoht", notifTitle: "🔔 Välju järgmises peatuses", nextStopTitle: "🔔 Järgmine peatus: {name}",
+      approaching: "läheneb", movingAway: "eemaldub", nothingWithin: "🍃 {r} raadiuses pole praegu midagi.<br>Suurenda raadiust või oota veidi.",
+      noFavs: "Lemmikuid veel pole. Puuduta ♡ peatuse paneelil või sõiduki kaardil.", favStops: "❤️ Peatused", favLines: "❤️ Liinid", remove: "Eemalda",
+      elronStation: "🚆 Elroni raudteejaam", swap: "Vaheta algus ja sihtkoht",
+    },
+  };
+  let lang = (() => { try { const v = localStorage.getItem("tl.lang"); if (v === "et" || v === "en") return v; } catch {} return /^et/i.test(navigator.language || "") ? "et" : "en"; })();
+  const t = (k, vars = {}) => String((I18N[lang] && I18N[lang][k]) ?? I18N.en[k] ?? k).replace(/\{(\w+)\}/g, (_, n) => (vars[n] ?? ""));
+  const TYPE_LABEL = new Proxy({}, { get: (_, k) => t(k) });
+  function applyLang() {
+    document.documentElement.lang = lang;
+    document.querySelectorAll("[data-i18n]").forEach((el) => { el.innerHTML = t(el.dataset.i18n); });
+    document.querySelectorAll("[data-i18n-ph]").forEach((el) => { el.placeholder = t(el.dataset.i18nPh); });
+    $("#langBtn").textContent = lang === "et" ? "EN" : "ET"; // shows the language you can switch to
+    $("#dirSwap").title = t("swap");
+  }
+  applyLang();
+  $("#langBtn").addEventListener("click", () => {
+    lang = lang === "et" ? "en" : "et";
+    try { localStorage.setItem("tl.lang", lang); } catch {}
+    applyLang();
+    window.dispatchEvent(new Event("tl:lang"));
+  });
   const EMOJI = { tram: "🚋", bus: "🚌", troll: "🚎", train: "🚆" };
   const POLL_MS = 3000;
   const ANIM_MS = 10000; // the feed is rewritten every 10 s, so glide for the full interval
@@ -624,19 +699,19 @@
 
   function popupHtml(d) {
     if (d.type === "train") {
-      const delay = d.delay > 0 ? `<b style="color:#c2512a">${d.delay} min late</b>` : d.status === "hilineb peatuses" ? `<b style="color:#c2512a">held at a stop</b>` : `<b style="color:#1f8f5f">on time</b>`;
+      const delay = d.delay > 0 ? `<b style="color:#c2512a">${t("late", { n: d.delay })}</b>` : d.status === "hilineb peatuses" ? `<b style="color:#c2512a">${t("heldAtStop")}</b>` : `<b style="color:#1f8f5f">${t("onTime")}</b>`;
       return `<div class="pop">
         ${badge(d.type, d.label)}
         <div><div class="dest">${esc(d.route)} <button class="favline ${isFavLine(d.type, d.route) ? "on" : ""}" data-type="${d.type}" data-line="${esc(d.route)}" title="Favourite this train route">${isFavLine(d.type, d.route) ? "♥" : "♡"}</button></div>
-        <div class="sm">Train ${esc(d.line)} · ${d.speed} km/h · ${delay}</div>
-        <div class="sm">Last stop: ${esc(d.lastStop || "—")} · ${esc(d.start)}–${esc(d.end)}</div>
+        <div class="sm">${t("trainN", { n: esc(d.line) })} · ${d.speed} km/h · ${delay}</div>
+        <div class="sm">${t("lastStop")}: ${esc(d.lastStop || "—")} · ${esc(d.start)}–${esc(d.end)}</div>
         ${d.note ? `<div class="sm">⚠️ ${esc(d.note)}</div>` : ""}</div>
       </div>`;
     }
     return `<div class="pop">
       ${badge(d.type, d.line)}
       <div><div class="dest">→ ${esc(d.dest || "—")} <button class="favline ${isFavLine(d.type, d.line) ? "on" : ""}" data-type="${d.type}" data-line="${esc(d.line)}" title="Favourite line ${esc(d.line)}">${isFavLine(d.type, d.line) ? "♥" : "♡"}</button></div>
-      <div class="sm">${TYPE_LABEL[d.type]} · vehicle ${esc(d.id)}${d.lowFloor ? " · ♿ low floor" : ""}</div></div>
+      <div class="sm">${TYPE_LABEL[d.type]} · ${t("vehicle")} ${esc(d.id)}${d.lowFloor ? " · " + t("lowFloor") : ""}</div></div>
     </div>`;
   }
 
@@ -754,10 +829,10 @@
       const j = await r.json();
       applyFeed(j.vehicles, j.at);
       failures = 0;
-      $("#live").classList.remove("stale"); $("#liveText").textContent = "live";
+      $("#live").classList.remove("stale"); $("#liveText").textContent = t("live");
     } catch (e) {
       failures++;
-      if (failures >= 2) { $("#live").classList.add("stale"); $("#liveText").textContent = "offline"; }
+      if (failures >= 2) { $("#live").classList.add("stale"); $("#liveText").textContent = t("offline"); }
     } finally {
       setTimeout(poll, POLL_MS);
     }
@@ -766,7 +841,7 @@
   setInterval(() => {
     if (!lastAt) return;
     const s = Math.max(0, Math.round((Date.now() - lastAt) / 1000));
-    $("#updated").textContent = `${shownCount} shown · ${s}s ago`;
+    $("#updated").textContent = t("shownAgo", { n: shownCount, s });
   }, 1000);
 
   // ---------- PWA ----------
@@ -937,7 +1012,7 @@
   $("#favChip").addEventListener("click", () => {
     if (!favs.stops.length && !favs.lines.length) {
       $("#favs").className = "favs on";
-      $("#favs").innerHTML = `<div class="empty" style="padding:8px 10px">No favourites yet. Tap ♡ on a stop or on a vehicle's card.</div>`;
+      $("#favs").innerHTML = `<div class="empty" style="padding:8px 10px">${t("noFavs")}</div>`;
       if (isMobile()) $("#top").classList.add("search-open");
       return;
     }
@@ -952,8 +1027,8 @@
     if (q || (!favs.stops.length && !favs.lines.length)) { box.className = "favs"; box.innerHTML = ""; return; }
     box.className = "favs on";
     let h = "";
-    if (favs.stops.length) h += `<div class="fhead">❤️ Stops</div>` + favs.stops.map((f, i) => `<div class="frow" data-stop="${i}"><span>${f.train ? "🚆" : "🚏"}</span><span class="n">${esc(f.name)}</span><button class="x" data-rm-stop="${i}" title="Remove">♥</button></div>`).join("");
-    if (favs.lines.length) h += `<div class="fhead">❤️ Lines</div>` + favs.lines.map((k, i) => { const [type, line] = k.split(":"); return `<div class="frow" data-line="${i}">${badge(type, line)}<span class="n"><small>${TYPE_LABEL[type] || type}</small></span><button class="x" data-rm-line="${i}" title="Remove">♥</button></div>`; }).join("");
+    if (favs.stops.length) h += `<div class="fhead">${t("favStops")}</div>` + favs.stops.map((f, i) => `<div class="frow" data-stop="${i}"><span>${f.train ? "🚆" : "🚏"}</span><span class="n">${esc(f.name)}</span><button class="x" data-rm-stop="${i}" title="Remove">♥</button></div>`).join("");
+    if (favs.lines.length) h += `<div class="fhead">${t("favLines")}</div>` + favs.lines.map((k, i) => { const [type, line] = k.split(":"); return `<div class="frow" data-line="${i}">${badge(type, line)}<span class="n"><small>${TYPE_LABEL[type] || type}</small></span><button class="x" data-rm-line="${i}" title="Remove">♥</button></div>`; }).join("");
     box.innerHTML = h;
     box.querySelectorAll("[data-rm-stop]").forEach((b) => b.addEventListener("click", (e) => { e.stopPropagation(); favs.stops.splice(Number(b.dataset.rmStop), 1); favsChanged(); }));
     box.querySelectorAll("[data-rm-line]").forEach((b) => b.addEventListener("click", (e) => { e.stopPropagation(); favs.lines.splice(Number(b.dataset.rmLine), 1); favsChanged(); }));
@@ -971,6 +1046,13 @@
   $("#q").addEventListener("input", renderFavList);
   $("#q").addEventListener("focus", renderFavList);
   ready.then(() => { ensureFavLayer(); applyFavMode(); renderFavList(); });
+
+  window.addEventListener("tl:lang", () => {
+    renderNear(); renderFavList(); renderResults();
+    if (lastStopData) { renderTabs(lastStopData); renderStop(lastStopData); }
+    if (dir.itins.length) { renderItins(); selectItin(Math.max(0, dir.sel)); } else if ($("#dir").classList.contains("on")) $("#dirList").innerHTML = `<div class="empty">${t(dir.to ? "findingRoutes" : "dirEmpty")}</div>`;
+    syncDirFields();
+  });
 
   // ---------- Stop groups & search ----------
   const norm = (t) => t.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
@@ -1023,7 +1105,7 @@
   function dirBtnHtml(g, p, dirs, extraClass = "") {
     const list = dirs?.[p.siri];
     const multi = g.platforms.length > 1;
-    const label = list?.length ? `→ ${list.map(esc).join(" · ")}` : "no departures";
+    const label = list?.length ? `→ ${list.map(esc).join(" · ")}` : t("noDeps");
     return `<button class="dirbtn ${list?.length ? "" : "muted"} ${extraClass}" data-siri="${esc(p.siri)}">${multi ? `<b>${g.letters[p.siri]}</b>` : "🚏"}<span>${label}</span></button>`;
   }
   let resultSeq = 0;
@@ -1038,9 +1120,9 @@
     const seq = ++resultSeq;
     box.className = "results on";
     box.innerHTML = top.map((g, i) => `<div class="result" data-i="${i}">
-        <div class="name">${g.platforms[0].train ? "🚆" : "🚏"} ${esc(g.name)} <small>${g.platforms[0].train ? "train station" : g.platforms.length > 1 ? `${g.platforms.length} platforms` : ""}</small></div>
+        <div class="name">${g.platforms[0].train ? "🚆" : "🚏"} ${esc(g.name)} <small>${g.platforms[0].train ? t("trainStation") : g.platforms.length > 1 ? t("platforms", { n: g.platforms.length }) : ""}</small></div>
         <div class="dirs">${g.platforms[0].train ? "" : g.platforms.map((p) => dirBtnHtml(g, p, null)).join("")}</div>
-        <div class="go"><button class="dirgo" data-go="1">🧭 Directions</button></div>
+        <div class="go"><button class="dirgo" data-go="1">🧭 ${t("directions")}</button></div>
       </div>`).join("") + `<div id="placeResults"></div>`;
     box.querySelectorAll(".result").forEach((row) => {
       const g = top[Number(row.dataset.i)];
@@ -1058,10 +1140,10 @@
         if (seq !== resultSeq) return;
         const pr = $("#placeResults"); if (!pr) return;
         const places = j.results.filter((r) => r.type !== "STOP").slice(0, 4);
-        if (!places.length) { if (!top.length) pr.innerHTML = `<div class="empty" style="padding:10px">Nothing found for “${esc(stopQuery)}”.</div>`; return; }
+        if (!places.length) { if (!top.length) pr.innerHTML = `<div class="empty" style="padding:10px">${t("nothingFound", { q: esc(stopQuery) })}</div>`; return; }
         pr.innerHTML = places.map((r, i) => `<div class="result place" data-i="${i}">
             <div class="name">📍 ${esc(r.name)} <small>${esc(r.area || "")}</small></div>
-            <div class="go"><button class="dirgo">🧭 Directions</button></div>
+            <div class="go"><button class="dirgo">🧭 ${t("directions")}</button></div>
           </div>`).join("");
         pr.querySelectorAll(".result.place").forEach((row) => {
           const r = places[Number(row.dataset.i)];
@@ -1116,7 +1198,7 @@
       lastStopData = null; clearInterval(stopTimer);
       $("#stopName").textContent = s.name; $("#stopUpdated").textContent = "";
       $("#stopTabs").className = "tabs"; $("#stopTabs").innerHTML = "";
-      $("#stopList").innerHTML = `<div class="empty">Loading trains…</div>`;
+      $("#stopList").innerHTML = `<div class="empty">${t("loadingTrains")}</div>`;
       $("#stop").classList.add("on"); document.body.classList.add("stop-open");
       map.getSource("stop-sel").setData({ type: "FeatureCollection", features: [{ type: "Feature", properties: { label: "" }, geometry: { type: "Point", coordinates: [s.lon, s.lat] } }] });
       syncStopFav();
@@ -1131,7 +1213,7 @@
     $("#stopTabs").className = "tabs"; $("#stopTabs").innerHTML = "";
     $("#stopName").textContent = s.name;
     $("#stopUpdated").textContent = "";
-    $("#stopList").innerHTML = `<div class="empty">Loading departures…</div>`;
+    $("#stopList").innerHTML = `<div class="empty">${t("loadingDepartures")}</div>`;
     $("#stop").classList.add("on"); document.body.classList.add("stop-open");
     map.getSource("stop-sel").setData(stopSelData());
     syncStopFav();
@@ -1157,7 +1239,7 @@
         stopFetchedAt = Date.now();
         renderStation(j, st);
       } catch (e) {
-        if (curStop === mine) $("#stopList").innerHTML = `<div class="empty">Couldn't load the train timetable.<br>Retrying shortly.</div>`;
+        if (curStop === mine) $("#stopList").innerHTML = `<div class="empty">${t("departuresFailed")}</div>`;
       }
       return;
     }
@@ -1170,7 +1252,7 @@
       renderTabs(j);
       renderStop(j);
     } catch (e) {
-      if (curStop === mine) $("#stopList").innerHTML = `<div class="empty">Couldn't load departures.<br>Retrying shortly.</div>`;
+      if (curStop === mine) $("#stopList").innerHTML = `<div class="empty">${t("departuresFailed")}</div>`;
     }
   }
   function renderTabs(j) {
@@ -1178,7 +1260,7 @@
     if (!curStop || curStop.platforms.length < 2) { tabs.className = "tabs"; tabs.innerHTML = ""; return; }
     const dirs = platformDirs(j.departures);
     tabs.className = "tabs on";
-    tabs.innerHTML = `<button class="dirbtn ${curStop.only ? "" : "on"}" data-siri=""><span>All</span></button>` +
+    tabs.innerHTML = `<button class="dirbtn ${curStop.only ? "" : "on"}" data-siri=""><span>${lang === "et" ? "Kõik" : "All"}</span></button>` +
       activePlatforms(curStop, dirs).map((p) => dirBtnHtml(curStop, p, dirs, curStop.only === p.siri ? "on" : "")).join("");
     tabs.querySelector(".dirbtn.on")?.scrollIntoView({ inline: "nearest", block: "nearest" });
     tabs.querySelectorAll(".dirbtn").forEach((b) => b.addEventListener("click", () => {
@@ -1195,7 +1277,7 @@
     const now = Date.now();
     const deps = (j.departures || []).filter((d) => new Date(d.dep).getTime() > now - 60000).slice(0, 10);
     if (!deps.length) {
-      $("#stopList").innerHTML = `<div class="empty">😴 No more trains from ${esc(st.name)} today.${st.note ? `<br><br>⚠️ ${esc(st.note)}` : ""}</div>`;
+      $("#stopList").innerHTML = `<div class="empty">😴 ${t("noMoreTrains", { name: esc(st.name) })}${st.note ? `<br><br>⚠️ ${esc(st.note)}` : ""}</div>`;
       return;
     }
     const note = st.note ? `<div class="empty" style="padding:8px 16px 0">⚠️ ${esc(st.note)}</div>` : "";
@@ -1204,10 +1286,10 @@
       const min = Math.round((t - now) / 60000);
       const delta = Math.round((t - sched) / 60000);
       const isNow = min <= 0;
-      const status = d.cancelled ? `<span class="tag late">cancelled</span>`
-        : d.realtime ? (Math.abs(delta) < 1 ? `<span class="tag ontime">on time</span>` : delta > 0 ? `<span class="tag late">+${delta} min</span>` : `<span class="tag early">${delta} min</span>`)
-        : `<span class="tag plat">timetable</span>`;
-      const when = min >= 60 ? `${Math.floor(min / 60)}<small>h ${min % 60}m</small>` : `${isNow ? "now" : min}<small>${isNow ? "" : "min"}</small>`;
+      const status = d.cancelled ? `<span class="tag late">${t("cancelled")}</span>`
+        : d.realtime ? (Math.abs(delta) < 1 ? `<span class="tag ontime">${t("onTime")}</span>` : delta > 0 ? `<span class="tag late">+${delta} min</span>` : `<span class="tag early">${delta} min</span>`)
+        : `<span class="tag plat">${t("timetable")}</span>`;
+      const when = min >= 60 ? `${Math.floor(min / 60)}<small>h ${min % 60}m</small>` : `${isNow ? t("now") : min}<small>${isNow ? "" : t("min")}</small>`;
       return `<div class="dep train">
         <div class="when ${isNow ? "now" : ""}">${when}</div>
         <div class="dot ${isNow ? "now" : ""}"></div>
@@ -1223,7 +1305,7 @@
     if (!curStop) return;
     const deps = j.departures.filter((d) => enabled[d.type] && (!curStop.only || d.stop === curStop.only)).slice(0, 25);
     if (!deps.length) {
-      $("#stopList").innerHTML = `<div class="empty">😴 No upcoming departures from ${esc(curStop.name)}${curStop.only ? " · platform " + curStop.letters[curStop.only] : ""}.</div>`;
+      $("#stopList").innerHTML = `<div class="empty">😴 ${t("noDepartures", { name: esc(curStop.name) + (curStop.only ? " · " + t("platform") + " " + curStop.letters[curStop.only] : "") })}</div>`;
       return;
     }
     const multi = curStop.platforms.length > 1;
@@ -1231,12 +1313,12 @@
       const min = Math.round(d.inSec / 60);
       const delta = Math.round((d.expected - d.scheduled) / 60);
       const isNow = d.inSec < 45;
-      const status = d.timetable ? `<span class="tag plat" title="No live data for this line">timetable</span>`
-        : Math.abs(delta) < 1 ? `<span class="tag ontime">on time</span>`
+      const status = d.timetable ? `<span class="tag plat">${t("timetable")}</span>`
+        : Math.abs(delta) < 1 ? `<span class="tag ontime">${t("onTime")}</span>`
         : delta > 0 ? `<span class="tag late">+${delta} min</span>` : `<span class="tag early">${delta} min</span>`;
       const platform = multi && !curStop.only ? `<span class="tag plat">${esc(curStop.letters[d.stop] || "?")}</span>` : "";
       return `<div class="dep ${d.type}">
-        <div class="when ${isNow ? "now" : ""}">${isNow ? "now" : min}<small>${isNow ? "" : "min"}</small></div>
+        <div class="when ${isNow ? "now" : ""}">${isNow ? t("now") : min}<small>${isNow ? "" : t("min")}</small></div>
         <div class="dot ${isNow ? "now" : ""}"></div>
         ${badge(d.type, d.line)}
         <div class="meta">
@@ -1248,7 +1330,7 @@
   }
   setInterval(() => {
     if (!curStop || !stopFetchedAt) return;
-    $("#stopUpdated").textContent = `${Math.round((Date.now() - stopFetchedAt) / 1000)}s ago`;
+    $("#stopUpdated").textContent = t("ago", { s: Math.round((Date.now() - stopFetchedAt) / 1000) });
   }, 1000);
 
   // ---------- Directions (A → B by public transport, via Transitous) ----------
@@ -1258,7 +1340,7 @@
   const MODE_COLOR = () => ({ bus: cssVar("--bus"), tram: cssVar("--tram"), troll: cssVar("--troll"), train: cssVar("--train"), rail: cssVar("--train"), ferry: "#7fc8e8" });
   const fmtT = (iso) => new Date(iso).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Tallinn" });
   const fmtDur = (sec) => { const m = Math.round(sec / 60); return m >= 60 ? `${Math.floor(m / 60)} h ${m % 60} min` : `${m} min`; };
-  const placeFromMe = () => (me && !manual ? { name: "Your location", lat: me.lat, lon: me.lon, isMe: true } : null);
+  const placeFromMe = () => (me && !manual ? { name: t("yourLocation"), lat: me.lat, lon: me.lon, isMe: true } : null);
   const resolvePt = (which) => dir[which] || (which === "from" ? placeFromMe() : null);
 
   function syncDirFields() {
@@ -1273,7 +1355,7 @@
     closeStop();
     $("#results").className = "results"; $("#results").innerHTML = "";
     $("#dir").classList.add("on"); document.body.classList.add("dir-open");
-    if (!dir.to) { $("#dirList").innerHTML = `<div class="empty">Where do you want to go?<br>Type a stop, place or address above.</div>`; setTimeout(() => $("#dirTo").focus(), 50); }
+    if (!dir.to) { $("#dirList").innerHTML = `<div class="empty">${t("whereTo")}</div>`; setTimeout(() => $("#dirTo").focus(), 50); }
     planNow();
   }
   function closeDirections() {
@@ -1310,13 +1392,13 @@
     const q = text.trim();
     const seq = ++suggSeq;
     const rows = [];
-    if (which === "from" && placeFromMe()) rows.push({ emo: "📍", name: "Your location", sub: "", pick: () => placeFromMe() });
-    rows.push({ emo: "🗺️", name: "Choose on the map", sub: "", pick: () => { dir.pick = which; hideSugg(); $("#dirList").innerHTML = `<div class="empty">Tap the map to set the ${which === "from" ? "start" : "destination"}.</div>`; return null; } });
+    if (which === "from" && placeFromMe()) rows.push({ emo: "📍", name: t("yourLocation"), sub: "", pick: () => placeFromMe() });
+    rows.push({ emo: "🗺️", name: t("chooseOnMap"), sub: "", pick: () => { dir.pick = which; hideSugg(); $("#dirList").innerHTML = `<div class="empty">${t("tapMapFor", { what: t(which === "from" ? "theStart" : "theDestination") })}</div>`; return null; } });
     const nq = norm(q);
     if (nq.length >= 2 && stops.length) {
       for (const g of allClusters().filter((g) => norm(g.name).includes(nq)).sort((a, b) => (norm(b.name).startsWith(nq) - norm(a.name).startsWith(nq)) || a.name.localeCompare(b.name)).slice(0, 4)) {
         const p = g.platforms[0];
-        rows.push({ emo: p.train ? "🚆" : "🚏", name: g.name, sub: p.train ? "train station" : "stop", pick: () => ({ name: g.name, lat: p.lat, lon: p.lon }) });
+        rows.push({ emo: p.train ? "🚆" : "🚏", name: g.name, sub: p.train ? t("trainStation") : t("stop"), pick: () => ({ name: g.name, lat: p.lat, lon: p.lon }) });
       }
     }
     renderSugg(rows);
@@ -1354,8 +1436,8 @@
   map.on("click", (e) => {
     if (!dir.pick) return;
     const which = dir.pick; dir.pick = null;
-    dir[which] = { name: "Pinned location", lat: e.lngLat.lat, lon: e.lngLat.lng };
-    $(which === "from" ? "#dirFrom" : "#dirTo").value = "Pinned location";
+    dir[which] = { name: t("pinned"), lat: e.lngLat.lat, lon: e.lngLat.lng };
+    $(which === "from" ? "#dirFrom" : "#dirTo").value = t("pinned");
     planNow();
   });
 
@@ -1364,18 +1446,18 @@
     const a = resolvePt("from"), b = resolvePt("to");
     if (document.activeElement !== $("#dirFrom")) $("#dirFrom").value = a ? a.name : "";
     if (!b) return;
-    if (!a) { $("#dirList").innerHTML = `<div class="empty">No start yet. Allow location, or tap the start field and choose a place.</div>`; return; }
+    if (!a) { $("#dirList").innerHTML = `<div class="empty">${t("noStartYet")}</div>`; return; }
     const seq = ++dir.seq;
-    $("#dirList").innerHTML = `<div class="empty">Finding routes…</div>`;
+    $("#dirList").innerHTML = `<div class="empty">${t("findingRoutes")}</div>`;
     try {
       const j = await (await fetch(`/api/plan?from=${a.lat},${a.lon}&to=${b.lat},${b.lon}`, { cache: "no-store" })).json();
       if (seq !== dir.seq) return;
       dir.itins = j.itineraries || [];
-      if (!dir.itins.length) { $("#dirList").innerHTML = `<div class="empty">😕 No public transport route found right now.</div>`; clearRoute(); return; }
+      if (!dir.itins.length) { $("#dirList").innerHTML = `<div class="empty">${t("noRoute")}</div>`; clearRoute(); return; }
       renderItins();
       selectItin(0);
     } catch (e) {
-      if (seq === dir.seq) $("#dirList").innerHTML = `<div class="empty">Couldn't reach the route planner. Try again in a moment.</div>`;
+      if (seq === dir.seq) $("#dirList").innerHTML = `<div class="empty">${t("plannerDown")}</div>`;
     }
   }
   function chainHtml(it) {
@@ -1389,11 +1471,11 @@
     $("#dirList").innerHTML = dir.itins.map((it, i) => {
       const leaveMin = Math.round((new Date(it.startTime) - now) / 60000);
       const firstTransit = it.legs.find((l) => l.mode !== "walk");
-      const leaves = firstTransit ? `<span class="leaves">${leaveMin <= 0 ? "leaves now" : `leaves in ${leaveMin} min`}</span>` : `<span class="leaves">walk</span>`;
+      const leaves = firstTransit ? `<span class="leaves">${leaveMin <= 0 ? t("leavesNow") : t("leavesIn", { n: leaveMin })}</span>` : `<span class="leaves">${t("walk")}</span>`;
       return `<div class="it" data-i="${i}">
         <div class="chain">${chainHtml(it)}</div>
         <div class="time">${fmtT(it.startTime)} – ${fmtT(it.endTime)}</div>
-        <div class="meta">${leaves} · ${it.transfers ? `${it.transfers} transfer${it.transfers > 1 ? "s" : ""}` : "no transfers"}</div>
+        <div class="meta">${leaves} · ${it.transfers ? (it.transfers > 1 ? t("transfers", { n: it.transfers }) : t("transfer")) : t("noTransfers")}</div>
         <div class="meta r">${fmtDur(it.duration)}</div>
         <div class="steps2">${stepsHtml(it)}</div>
       </div>`;
@@ -1402,19 +1484,19 @@
   }
   function stepsHtml(it) {
     const out = [];
-    const A = resolvePt("from")?.name || "start", B = resolvePt("to")?.name || "destination";
+    const A = resolvePt("from")?.name || t("theStart"), B = resolvePt("to")?.name || t("theDestination");
     const nm = (p) => (p.name === "END" ? B : p.name === "START" ? A : p.name);
     for (const l of it.legs) {
       if (l.mode === "walk") {
         if (l.duration < 45) continue;
-        out.push(`<div class="lg walk"><div class="t">${fmtT(l.startTime)}</div><div class="bar"><i></i></div><div class="body">🚶 Walk ${Math.round(l.duration / 60)} min<small>${Math.round(l.distance)} m to ${esc(nm(l.to))}</small></div></div>`);
+        out.push(`<div class="lg walk"><div class="t">${fmtT(l.startTime)}</div><div class="bar"><i></i></div><div class="body">${t("walkMin", { n: Math.round(l.duration / 60) })}<small>${t("mTo", { m: Math.round(l.distance), name: esc(nm(l.to)) })}</small></div></div>`);
       } else {
         const c = MODE_COLOR()[l.mode] || "#999";
-        out.push(`<div class="lg" style="--c:${c}"><div class="t">${fmtT(l.startTime)}</div><div class="bar"><i></i></div><div class="body"><span class="badge ${l.mode}"><span class="emo">${MODE_EMOJI[l.mode] || "🚌"}</span>${esc(l.line || "")}</span>→ ${esc(l.headsign || l.to.name)}<small>Board at ${esc(nm(l.from))} · ${l.stops.length + 1} stop${l.stops.length ? "s" : ""} · ${fmtDur(l.duration)}</small><small>Get off at ${esc(nm(l.to))} · ${fmtT(l.endTime)}</small><div class="lv" data-leg="${it.legs.indexOf(l)}"></div></div></div>`);
+        out.push(`<div class="lg" style="--c:${c}"><div class="t">${fmtT(l.startTime)}</div><div class="bar"><i></i></div><div class="body"><span class="badge ${l.mode}"><span class="emo">${MODE_EMOJI[l.mode] || "🚌"}</span>${esc(l.line || "")}</span>→ ${esc(l.headsign || l.to.name)}<small>${t("boardAt", { name: esc(nm(l.from)) })} · ${t(l.stops.length ? "stopsNp" : "stopsN", { n: l.stops.length + 1 })} · ${fmtDur(l.duration)}</small><small>${t("getOffAt", { name: esc(nm(l.to)) })} · ${fmtT(l.endTime)}</small><div class="lv" data-leg="${it.legs.indexOf(l)}"></div></div></div>`);
       }
     }
     const last = it.legs[it.legs.length - 1];
-    out.push(`<div class="lg end"><div class="t">${fmtT(it.endTime)}</div><div class="bar"><i style="--c:var(--tram)"></i></div><div class="body">🏁 Arrive at ${esc(resolvePt("to")?.name || last.to.name)}</div></div>`);
+    out.push(`<div class="lg end"><div class="t">${fmtT(it.endTime)}</div><div class="bar"><i style="--c:var(--tram)"></i></div><div class="body">${t("arriveAt", { name: esc(resolvePt("to")?.name || last.to.name) })}</div></div>`);
     return out.join("");
   }
   function selectItin(i) {
@@ -1487,8 +1569,8 @@
   }
   function notifyGetOff(stopName) {
     try { if (navigator.vibrate) navigator.vibrate([250, 120, 250, 120, 400]); } catch {}
-    try { if ("Notification" in window && Notification.permission === "granted") new Notification("🔔 Get off at the next stop", { body: stopName, tag: "tallinn-live-stop" }); } catch {}
-    const old = document.title; document.title = "🔔 Next stop: " + stopName; setTimeout(() => { document.title = old; }, 60000);
+    try { if ("Notification" in window && Notification.permission === "granted") new Notification(t("notifTitle"), { body: stopName, tag: "tallinn-live-stop" }); } catch {}
+    const old = document.title; document.title = t("nextStopTitle", { name: stopName }); setTimeout(() => { document.title = old; }, 60000);
   }
   function updateRide() {
     if (!tracked.it || !tracked.legs.length) { setRide(null); return; }
@@ -1510,22 +1592,22 @@
     if (!riding) { if (rideState.leg) setRide(null); rideState = { leg: null, alerted: false, done: false }; return; }
     const { tl, pr } = riding;
     if (rideState.leg !== tl) rideState = { leg: tl, alerted: false, done: false };
-    const { t, stopAlong, alightIdx, l } = tl;
-    const alightName = t.stops[alightIdx].name;
+    const { t: trip, stopAlong, alightIdx, l } = tl;
+    const alightName = trip.stops[alightIdx].name;
     let left = 0, nextIdx = -1;
     for (let k = 0; k <= alightIdx; k++) if (stopAlong[k] > pr.along + 25) { left++; if (nextIdx < 0) nextIdx = k; }
-    const next = nextIdx >= 0 ? t.stops[nextIdx].name : alightName;
+    const next = nextIdx >= 0 ? trip.stops[nextIdx].name : alightName;
     if (left <= 0 || pr.along >= stopAlong[alightIdx] - 25) {
       if (!rideState.done) { rideState.done = true; }
-      setRide(`🏁 This is ${esc(alightName)} — get off here.<small>Then ${esc(nextLegText(tl))}</small>`, "alert");
+      setRide(`${t("thisIs", { name: esc(alightName) })}<small>${t("then", { then: esc(nextLegText(tl)) })}</small>`, "alert");
       return;
     }
     if (left === 1) {
       if (!rideState.alerted) { rideState.alerted = true; notifyGetOff(alightName); }
-      setRide(`🔔 Next stop is yours: ${esc(alightName)}<small>Get ready to get off · ${esc(nextLegText(tl))}</small>`, "alert");
+      setRide(`${t("nextIsYoursBig", { name: esc(alightName) })}<small>${t("getReady", { then: esc(nextLegText(tl)) })}</small>`, "alert");
       return;
     }
-    setRide(`🚌 On board ${esc(l.line)} · ${left} stops left<small>Next: ${esc(next)} · get off at ${esc(alightName)} (${fmtT(l.endTime)})</small>`);
+    setRide(`${t("onBoard", { line: esc(l.line), n: left })}<small>${t("nextGetOff", { next: esc(next), name: esc(alightName), t: fmtT(l.endTime) })}</small>`);
   }
   window.tallinnLive.debug = () => ({ dir, tracked, rideState });
   function nextLegText(tl) {
@@ -1533,15 +1615,15 @@
     const after = legs.slice(tl.i + 1);
     const nextTransit = after.find((x) => x.mode !== "walk");
     const walk = after[0] && after[0].mode === "walk" ? Math.round(after[0].duration / 60) : 0;
-    if (nextTransit) return `walk ${walk} min and take ${nextTransit.line} → ${nextTransit.headsign || nextTransit.to.name}`;
-    return walk ? `walk ${walk} min to ${resolvePt("to")?.name || "your destination"}` : "you're there";
+    if (nextTransit) return t("thenWalkTake", { n: walk, line: nextTransit.line, to: nextTransit.headsign || nextTransit.to.name });
+    return walk ? t("walkTo", { n: walk, name: resolvePt("to")?.name || t("yourDestination") }) : t("yourThere");
   }
   function updateLiveTracking() {
     if (!tracked.it || !$("#dir").classList.contains("on")) return;
     const now = Date.now();
     let trackId = null;
     for (const tl of tracked.legs) {
-      const { l, t, idx, stopAlong, boardIdx } = tl;
+      const { l, t: trip, idx, stopAlong, boardIdx } = tl;
       const boardAlong = stopAlong[boardIdx];
       const line = lineKey(l.line);
       const isTrain = l.mode === "train";
@@ -1560,10 +1642,10 @@
       const box = $(`#dirList .it.on .lv[data-leg="${tl.i}"]`);
       if (!box) continue;
       const schedStart = new Date(l.startTime).getTime();
-      if (rideState.leg === tl) { box.innerHTML = `<span class="ok"><span class="dotlive"></span>You're on this one.</span>`; if (best && !trackId) trackId = best.v.data.id; continue; }
+      if (rideState.leg === tl) { box.innerHTML = `<span class="ok"><span class="dotlive"></span>${t("onThisOne")}</span>`; if (best && !trackId) trackId = best.v.data.id; continue; }
       if (!best) {
         const minsToSched = Math.round((schedStart - now) / 60000);
-        box.innerHTML = `<span class="mut">${minsToSched > 12 ? "⚪ Not on the road yet" : "⚪ No live position for this one yet"} · scheduled ${fmtT(l.startTime)}</span>`;
+        box.innerHTML = `<span class="mut">${t(minsToSched > 12 ? "notOnRoad" : "noLivePos")} · ${t("scheduled", { t: fmtT(l.startTime) })}</span>`;
         continue;
       }
       // Stops still ahead of the vehicle up to and including your stop.
@@ -1572,26 +1654,26 @@
       // ETA from the timetable: how far through its schedule is the vehicle right now?
       let k = 0;
       while (k < stopAlong.length - 1 && stopAlong[k + 1] <= best.along) k++;
-      const tA = new Date(t.stops[k].dep || t.stops[k].arr).getTime(), tB = new Date(t.stops[Math.min(k + 1, t.stops.length - 1)].arr || t.stops[k].dep).getTime();
+      const tA = new Date(trip.stops[k].dep || trip.stops[k].arr).getTime(), tB = new Date(trip.stops[Math.min(k + 1, trip.stops.length - 1)].arr || trip.stops[k].dep).getTime();
       const segLen = Math.max(1, stopAlong[Math.min(k + 1, stopAlong.length - 1)] - stopAlong[k]);
       const frac = Math.max(0, Math.min(1, (best.along - stopAlong[k]) / segLen));
       const schedNow = tA + frac * (tB - tA);
-      const schedBoard = new Date(t.stops[boardIdx].arr || t.stops[boardIdx].dep).getTime();
+      const schedBoard = new Date(trip.stops[boardIdx].arr || trip.stops[boardIdx].dep).getTime();
       const etaMs = Math.max(0, schedBoard - schedNow);
       const eta = now + etaMs;
       const delayMin = Math.round((eta - schedStart) / 60000);
       const etaMin = Math.round(etaMs / 60000);
-      const where = stopsAway <= 0 ? "at your stop now" : stopsAway === 1 ? "next stop is yours" : `${stopsAway} stops away`;
-      const delayTxt = Math.abs(delayMin) < 1 ? "on time" : delayMin > 0 ? `${delayMin} min late` : `${-delayMin} min early`;
+      const where = stopsAway <= 0 ? t("atYourStop") : stopsAway === 1 ? t("nextIsYours") : t("stopsAway", { n: stopsAway });
+      const delayTxt = Math.abs(delayMin) < 1 ? t("onTime") : delayMin > 0 ? t("late", { n: delayMin }) : t("early", { n: -delayMin });
       let advice = "";
       const walkBefore = tracked.it.legs.slice(0, tl.i).reduce((a, x) => a + (x.mode === "walk" ? x.duration : 0), 0);
       if (tl === tracked.legs[0]) {
         const slackMin = Math.round((etaMs - walkBefore * 1000) / 60000);
-        advice = slackMin < 0 ? `<span class="warn">⚠️ Too tight: it reaches ${esc(t.stops[boardIdx].name)} ${-slackMin} min before you can. Check the next option.</span>`
-          : slackMin <= 1 ? `<span class="warn">🏃 Leave right now, it's close.</span>`
-          : `<span class="ok">🚶 Leave now and you'll have ${slackMin} min to spare.</span>`;
+        advice = slackMin < 0 ? `<span class="warn">${t("tooTight", { name: esc(trip.stops[boardIdx].name), n: -slackMin })}</span>`
+          : slackMin <= 1 ? `<span class="warn">${t("leaveRightNow")}</span>`
+          : `<span class="ok">${t("leaveNow", { n: slackMin })}</span>`;
       }
-      box.innerHTML = `<span class="ok"><span class="dotlive"></span>Live: ${esc(l.line)} is ${where} · here in ~${etaMin} min (${fmtT(new Date(eta).toISOString())}, ${delayTxt})</span>${advice}`;
+      box.innerHTML = `<span class="ok"><span class="dotlive"></span>${t("liveIs", { line: esc(l.line), where, n: etaMin, t: fmtT(new Date(eta).toISOString()), status: delayTxt })}</span>${advice}`;
       if (!trackId) trackId = best.v.data.id;
     }
     if (trackId !== tracked.vehId) {
@@ -1784,12 +1866,12 @@
   $("#nearBtn").addEventListener("click", () => {
     const label = $("#nearBtn span:last-child");
     startCompass(); // needs a tap on iOS
-    const fallback = () => { label.textContent = "Near me"; manual = true; const c = map.getCenter(); setMe(c.lat, c.lng, false); openNear(false); };
+    const fallback = () => { label.textContent = t("nearMe"); manual = true; const c = map.getCenter(); setMe(c.lat, c.lng, false); openNear(false); };
     if (!canLocate()) return fallback();
     if (me && !manual) return openNear(true); // already located: open the list right away
-    label.textContent = "Locating…";
+    label.textContent = t("locating");
     manual = false;
-    startWatch(() => { label.textContent = "Near me"; openNear(false); }, fallback);
+    startWatch(() => { label.textContent = t("nearMe"); openNear(false); }, fallback);
   });
   $("#nearClose").addEventListener("click", closeNear);
   map.on("contextmenu", (e) => { e.preventDefault(); manual = true; setMe(e.lngLat.lat, e.lngLat.lng, false); openNear(false); });
@@ -1819,7 +1901,7 @@
     if (favMode) rows.sort((a, b) => isFavLine(b.v.data.type, b.v.data.line) - isFavLine(a.v.data.type, a.v.data.line));
     const list = $("#nearList");
     if (!rows.length) {
-      list.innerHTML = `<div class="empty">🍃 Nothing within ${fmtDist(radiusM)} right now.<br>Widen the radius or wait a moment.</div>`;
+      list.innerHTML = `<div class="empty">${t("nothingWithin", { r: fmtDist(radiusM) })}</div>`;
       return;
     }
     list.innerHTML = rows.map(({ v, d, approaching }) => `
@@ -1827,7 +1909,7 @@
         ${badge(v.data.type, v.data.label || v.data.line)}
         <div class="meta">
           <div class="dest">${isFavLine(v.data.type, v.data.line) ? `<span class="star">♥</span>` : ""}${v.data.type === "train" ? esc(v.data.route) : "→ " + esc(v.data.dest || "—")}</div>
-          <div class="info"><span>${TYPE_LABEL[v.data.type]}</span><span class="tag ${approaching ? "approach" : "away"}">${approaching ? "approaching" : "moving away"}</span></div>
+          <div class="info"><span>${TYPE_LABEL[v.data.type]}</span><span class="tag ${approaching ? "approach" : "away"}">${approaching ? t("approaching") : t("movingAway")}</span></div>
         </div>
         <div class="dist">${fmtDist(d)}<small>${fmtWalk(d)}</small></div>
       </div>`).join("");
