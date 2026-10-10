@@ -1083,7 +1083,8 @@
       const min = Math.round(d.inSec / 60);
       const delta = Math.round((d.expected - d.scheduled) / 60);
       const isNow = d.inSec < 45;
-      const status = Math.abs(delta) < 1 ? `<span class="tag ontime">on time</span>`
+      const status = d.timetable ? `<span class="tag plat" title="No live data for this line">timetable</span>`
+        : Math.abs(delta) < 1 ? `<span class="tag ontime">on time</span>`
         : delta > 0 ? `<span class="tag late">+${delta} min</span>` : `<span class="tag early">${delta} min</span>`;
       const platform = multi && !curStop.only ? `<span class="tag plat">${esc(curStop.letters[d.stop] || "?")}</span>` : "";
       return `<div class="dep ${d.type}">

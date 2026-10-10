@@ -31,7 +31,10 @@ upstream request. `vercel.json` sets a 10 s function timeout.
   - `GET /api/stops` → Tallinn city platforms (with SIRI ids) from `data/stops.txt`,
     plus the 141 Elron stations from `elron.ee/stops_data.json` (`train: true`)
   - `GET /api/departures?ids=1280,1322` → upcoming departures for one or more
-    platforms, from `siri-stop-departures.php` (live expected vs scheduled time)
+    platforms, from `siri-stop-departures.php` (live expected vs scheduled time),
+    merged with the national timetable from Transitous so county/regional buses
+    (SEBE lines 116, 178, 335 …) that the city feed omits still appear, tagged
+    `timetable`
   - `GET /api/plan?from=lat,lon&to=lat,lon` → public-transport itineraries from
     [Transitous](https://transitous.org) (open MOTIS instance, no key), trimmed
     to legs, stops and decoded route geometry
