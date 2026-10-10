@@ -88,6 +88,23 @@
   #searchBtn { background: var(--soft); border: none; width: 36px; height: 36px; border-radius: 50%; font-size: 16px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; flex: none; }
   #searchBtn.on { background: var(--stop); }
   .brand .right { display: flex; align-items: center; gap: 8px; }
+  .chip.fav { --c: #ffc9cf; }
+  .chip.fav.off { opacity: 1; background: var(--soft); box-shadow: none; }
+  .chip.fav.off .emo { filter: grayscale(1) opacity(.6); }
+  .favbtn { background: var(--soft); border: none; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; font-size: 15px; line-height: 1; display: inline-flex; align-items: center; justify-content: center; color: #c9a0a6; }
+  .favbtn.on { background: rgba(255,201,207,0.6); color: #e0304a; }
+  .favline { background: transparent; border: none; cursor: pointer; font-size: 14px; padding: 0 2px; color: #c9a0a6; vertical-align: middle; }
+  .favline.on { color: #e0304a; }
+  .favs { display: none; flex-direction: column; gap: 5px; }
+  .favs.on { display: flex; }
+  .favs .fhead { font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); padding: 2px 4px 0; }
+  .favs .frow { display: flex; align-items: center; gap: 8px; padding: 7px 8px 7px 10px; border-radius: 14px; background: var(--soft); cursor: pointer; font-weight: 800; font-size: 13px; }
+  .favs .frow:hover { background: rgba(45,42,50,0.09); }
+  .favs .frow span.n { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .favs .frow .x { background: transparent; border: none; cursor: pointer; font-size: 13px; color: #e0304a; }
+  .favs .frow small { color: var(--muted); font-weight: 600; font-size: 11px; }
+  .item .star, .dep .star { color: #e0304a; font-size: 10px; margin-right: 3px; vertical-align: 1px; }
+  @media (max-width: 719px) { #top:not(.search-open) .favs { display: none; } }
   .chip.stops { display: none; }
   .chip.install { --c: var(--me); text-decoration: none; }
   body.standalone .chip.install { display: none !important; }
@@ -410,11 +427,13 @@
     <input id="q" type="search" placeholder="Line or stop · e.g. T4, 8, Risti" autocomplete="off" spellcheck="false">
   </div>
   <div class="results" id="results"></div>
+  <div class="favs" id="favs"></div>
   <div class="chips">
     <button class="chip tram" data-type="tram"><span class="emo">🚋</span>Tram <b id="nTram">0</b></button>
     <button class="chip bus" data-type="bus"><span class="emo">🚌</span>Bus <b id="nBus">0</b></button>
     <button class="chip troll" data-type="troll"><span class="emo">🚎</span>Trolley <b id="nTroll">0</b></button>
     <button class="chip train" data-type="train"><span class="emo">🚆</span>Train <b id="nTrain">0</b></button>
+    <button class="chip fav off" id="favChip" title="Show only your favourites"><span class="emo">❤️</span>Favorites <b id="nFav">0</b></button>
     <button class="chip stops" id="stopsChip"><span class="emo">🚏</span>Stops</button>
     <button class="chip" id="dirChip" style="--c: rgba(183,163,232,0.6)"><span class="emo">🧭</span>Directions</button>
     <a class="chip install" id="installChip" href="/install"><span class="emo">📲</span>Install app</a>
@@ -450,7 +469,7 @@
     <div class="grab"></div>
     <header>
       <h2><span class="emo">🚏</span><span id="stopName">Stop</span></h2>
-      <div class="right"><span class="sub" id="stopUpdated"></span><button class="dirgo" id="stopDir" title="Directions to this stop">🧭 Go</button><button class="iconbtn" id="stopClose" title="Close">✕</button></div>
+      <div class="right"><span class="sub" id="stopUpdated"></span><button class="favbtn" id="stopFav" title="Favourite this stop">♡</button><button class="dirgo" id="stopDir" title="Directions to this stop">🧭 Go</button><button class="iconbtn" id="stopClose" title="Close">✕</button></div>
     </header>
     <div class="tabs" id="stopTabs"></div>
     <div class="list" id="stopList"></div>
@@ -539,6 +558,32 @@
   let shownCount = 0;
   let stops = []; // [{id, siri, name, lat, lon}]
 
+  // ---------- Favourites (stops + lines), persisted per browser ----------
+  const favs = { stops: [], lines: [] }; // stops: [{key,name,lat,lon,train}], lines: ["bus:8", "tram:T4"]
+  let favMode = false;
+  const lineKeyOf = (type, line) => `${type}:${String(line).trim().toUpperCase()}`;
+  const stopKeyOf = (st) => `${st.name}|${st.lat.toFixed(3)}|${st.lon.toFixed(3)}`;
+  function loadFavs() {
+    try { const j = JSON.parse(localStorage.getItem("tl.favs") || "{}"); favs.stops = j.stops || []; favs.lines = j.lines || []; } catch {}
+    try { favMode = localStorage.getItem("tl.favmode") === "1" && (favs.stops.length + favs.lines.length) > 0; } catch {}
+  }
+  function saveFavs() { try { localStorage.setItem("tl.favs", JSON.stringify(favs)); localStorage.setItem("tl.favmode", favMode ? "1" : "0"); } catch {} }
+  const isFavLine = (type, line) => favs.lines.includes(lineKeyOf(type, line));
+  const isFavStop = (st) => favs.stops.some((f) => f.key === stopKeyOf(st));
+  function toggleFavLine(type, line) {
+    const k = lineKeyOf(type, line);
+    const i = favs.lines.indexOf(k);
+    if (i >= 0) favs.lines.splice(i, 1); else favs.lines.push(k);
+    favsChanged();
+  }
+  function toggleFavStop(st) {
+    const k = stopKeyOf(st);
+    const i = favs.stops.findIndex((f) => f.key === k);
+    if (i >= 0) favs.stops.splice(i, 1); else favs.stops.push({ key: k, name: st.name, lat: st.lat, lon: st.lon, train: !!st.train });
+    favsChanged();
+  }
+  loadFavs();
+
   // ---------- Helpers ----------
   const R = 6371000;
   function dist(a, b) {
@@ -582,7 +627,7 @@
       const delay = d.delay > 0 ? `<b style="color:#c2512a">${d.delay} min late</b>` : d.status === "hilineb peatuses" ? `<b style="color:#c2512a">held at a stop</b>` : `<b style="color:#1f8f5f">on time</b>`;
       return `<div class="pop">
         ${badge(d.type, d.label)}
-        <div><div class="dest">${esc(d.route)}</div>
+        <div><div class="dest">${esc(d.route)} <button class="favline ${isFavLine(d.type, d.route) ? "on" : ""}" data-type="${d.type}" data-line="${esc(d.route)}" title="Favourite this train route">${isFavLine(d.type, d.route) ? "♥" : "♡"}</button></div>
         <div class="sm">Train ${esc(d.line)} · ${d.speed} km/h · ${delay}</div>
         <div class="sm">Last stop: ${esc(d.lastStop || "—")} · ${esc(d.start)}–${esc(d.end)}</div>
         ${d.note ? `<div class="sm">⚠️ ${esc(d.note)}</div>` : ""}</div>
@@ -590,7 +635,7 @@
     }
     return `<div class="pop">
       ${badge(d.type, d.line)}
-      <div><div class="dest">→ ${esc(d.dest || "—")}</div>
+      <div><div class="dest">→ ${esc(d.dest || "—")} <button class="favline ${isFavLine(d.type, d.line) ? "on" : ""}" data-type="${d.type}" data-line="${esc(d.line)}" title="Favourite line ${esc(d.line)}">${isFavLine(d.type, d.line) ? "♥" : "♡"}</button></div>
       <div class="sm">${TYPE_LABEL[d.type]} · vehicle ${esc(d.id)}${d.lowFloor ? " · ♿ low floor" : ""}</div></div>
     </div>`;
   }
@@ -682,12 +727,17 @@
   let highlightLines = null; // Set of lines on the chosen route
   function applyHighlight() {
     shownCount = 0;
-    const hl = highlightLines || (highlightLine ? new Set([highlightLine]) : null);
+    // Precedence: a chosen route > favourites mode > a tapped line.
+    let test = null;
+    if (highlightLines) test = (d) => highlightLines.has(d.line);
+    else if (favMode && favs.lines.length) test = (d) => isFavLine(d.type, d.line);
+    else if (highlightLine) test = (d) => d.line === highlightLine;
     for (const v of vehicles.values()) {
       if (!v.shown) continue;
       shownCount++;
-      v.el.classList.toggle("dim", !!hl && !hl.has(v.data.line));
-      v.el.classList.toggle("hl", !!hl && hl.has(v.data.line));
+      const on = test ? test(v.data) : null;
+      v.el.classList.toggle("dim", on === false);
+      v.el.classList.toggle("hl", on === true);
     }
   }
   map.on("click", (e) => {
@@ -843,6 +893,85 @@
   }
   $("#stopsToggle").addEventListener("change", (e) => setStopsVisible(e.target.checked));
 
+  // ---------- Favourites UI ----------
+  function favStopsData() {
+    return { type: "FeatureCollection", features: favs.stops.map((f) => ({ type: "Feature", properties: { name: f.name }, geometry: { type: "Point", coordinates: [f.lon, f.lat] } })) };
+  }
+  async function ensureFavLayer() {
+    await ready;
+    if (map.getSource("fav-stops")) return;
+    map.addSource("fav-stops", { type: "geojson", data: favStopsData() });
+    map.addLayer({
+      id: "fav-stops", type: "circle", source: "fav-stops",
+      paint: { "circle-radius": ["interpolate", ["linear"], ["zoom"], 10, 5, 15, 9], "circle-color": "#ffd6db", "circle-opacity": 0.95, "circle-stroke-color": "#e0304a", "circle-stroke-width": 2.5 },
+    });
+    map.addLayer({
+      id: "fav-stops-star", type: "symbol", source: "fav-stops", minzoom: 12,
+      layout: { "text-field": "♥", "text-font": ["Noto Sans Bold"], "text-size": 10, "text-allow-overlap": true, "text-offset": [0, 0.05] },
+      paint: { "text-color": "#e0304a" },
+    });
+    map.on("click", "fav-stops", (ev) => {
+      const f = favs.stops.find((x) => x.name === ev.features[0].properties.name);
+      if (f) openStop({ name: f.name, lat: f.lat, lon: f.lon, train: f.train, siri: null });
+    });
+  }
+  function applyFavMode() {
+    $("#favChip").classList.toggle("off", !favMode);
+    $("#nFav").textContent = favs.stops.length + favs.lines.length;
+    if (map.getLayer("stops")) {
+      const dim = favMode && favs.stops.length > 0;
+      map.setPaintProperty("stops", "circle-opacity", dim ? 0.18 : ["interpolate", ["linear"], ["zoom"], 12.5, 0.3, 15, 0.85]);
+      map.setPaintProperty("stations", "circle-opacity", dim ? 0.25 : 0.95);
+    }
+    applyHighlight();
+    renderNear();
+  }
+  function favsChanged() {
+    saveFavs();
+    if (!favs.stops.length && !favs.lines.length) favMode = false;
+    ensureFavLayer().then(() => map.getSource("fav-stops").setData(favStopsData()));
+    applyFavMode();
+    renderFavList();
+    if (lastStopData) renderStop(lastStopData);
+  }
+  $("#favChip").addEventListener("click", () => {
+    if (!favs.stops.length && !favs.lines.length) {
+      $("#favs").className = "favs on";
+      $("#favs").innerHTML = `<div class="empty" style="padding:8px 10px">No favourites yet. Tap ♡ on a stop or on a vehicle's card.</div>`;
+      if (isMobile()) $("#top").classList.add("search-open");
+      return;
+    }
+    favMode = !favMode;
+    saveFavs();
+    applyFavMode();
+  });
+  // Favourites list lives under the search box while it is empty & focused (and always on desktop when empty).
+  function renderFavList() {
+    const box = $("#favs");
+    const q = $("#q").value.trim();
+    if (q || (!favs.stops.length && !favs.lines.length)) { box.className = "favs"; box.innerHTML = ""; return; }
+    box.className = "favs on";
+    let h = "";
+    if (favs.stops.length) h += `<div class="fhead">❤️ Stops</div>` + favs.stops.map((f, i) => `<div class="frow" data-stop="${i}"><span>${f.train ? "🚆" : "🚏"}</span><span class="n">${esc(f.name)}</span><button class="x" data-rm-stop="${i}" title="Remove">♥</button></div>`).join("");
+    if (favs.lines.length) h += `<div class="fhead">❤️ Lines</div>` + favs.lines.map((k, i) => { const [type, line] = k.split(":"); return `<div class="frow" data-line="${i}">${badge(type, line)}<span class="n"><small>${TYPE_LABEL[type] || type}</small></span><button class="x" data-rm-line="${i}" title="Remove">♥</button></div>`; }).join("");
+    box.innerHTML = h;
+    box.querySelectorAll("[data-rm-stop]").forEach((b) => b.addEventListener("click", (e) => { e.stopPropagation(); favs.stops.splice(Number(b.dataset.rmStop), 1); favsChanged(); }));
+    box.querySelectorAll("[data-rm-line]").forEach((b) => b.addEventListener("click", (e) => { e.stopPropagation(); favs.lines.splice(Number(b.dataset.rmLine), 1); favsChanged(); }));
+    box.querySelectorAll("[data-stop]").forEach((r) => r.addEventListener("click", () => { const f = favs.stops[Number(r.dataset.stop)]; openStop({ name: f.name, lat: f.lat, lon: f.lon, train: f.train, siri: null }); map.flyTo({ center: [f.lon, f.lat], zoom: Math.max(map.getZoom(), 15.5), duration: 700 }); if (isMobile()) closeSearch(); }));
+    box.querySelectorAll("[data-line]").forEach((r) => r.addEventListener("click", () => { const [, line] = favs.lines[Number(r.dataset.line)].split(":"); $("#q").value = line; $("#q").dispatchEvent(new Event("input")); }));
+  }
+  document.addEventListener("click", (e) => {
+    const b = e.target.closest(".favline");
+    if (!b) return;
+    e.stopPropagation();
+    toggleFavLine(b.dataset.type, b.dataset.line);
+    const on = isFavLine(b.dataset.type, b.dataset.line);
+    b.textContent = on ? "♥" : "♡"; b.classList.toggle("on", on);
+  });
+  $("#q").addEventListener("input", renderFavList);
+  $("#q").addEventListener("focus", renderFavList);
+  ready.then(() => { ensureFavLayer(); applyFavMode(); renderFavList(); });
+
   // ---------- Stop groups & search ----------
   const norm = (t) => t.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
   // All platforms sharing a name within 400 m count as one stop; letters are stable (sorted by SIRI id).
@@ -964,7 +1093,24 @@
   let stopFetchedAt = 0;
   let lastStopData = null;
 
+  function syncStopFav() {
+    const b = $("#stopFav");
+    if (!curStop) return;
+    const st = curStop.train ? curStop.station : curStop.platforms[0];
+    const on = isFavStop(st);
+    b.textContent = on ? "♥" : "♡"; b.classList.toggle("on", on);
+  }
+  $("#stopFav").addEventListener("click", () => {
+    if (!curStop) return;
+    const st = curStop.train ? curStop.station : curStop.platforms[0];
+    toggleFavStop({ ...st, name: curStop.name });
+    syncStopFav();
+  });
   function openStop(s, onlySiri = null) {
+    if (!s.train && !s.siri) { // favourite without platform data: find the real stop
+      const real = stops.filter((o) => o.name === s.name && !o.train).sort((a, b) => dist(a, s) - dist(b, s))[0];
+      if (real) s = real;
+    }
     if (s.train) { // Elron station: departures come from the national timetable (Transitous), not the city feed
       curStop = { name: s.name, platforms: [s], letters: {}, ids: "", only: null, train: true, station: s };
       lastStopData = null; clearInterval(stopTimer);
@@ -973,6 +1119,7 @@
       $("#stopList").innerHTML = `<div class="empty">Loading trains…</div>`;
       $("#stop").classList.add("on"); document.body.classList.add("stop-open");
       map.getSource("stop-sel").setData({ type: "FeatureCollection", features: [{ type: "Feature", properties: { label: "" }, geometry: { type: "Point", coordinates: [s.lon, s.lat] } }] });
+      syncStopFav();
       refreshStop();
       stopTimer = setInterval(refreshStop, 30000);
       return;
@@ -987,6 +1134,7 @@
     $("#stopList").innerHTML = `<div class="empty">Loading departures…</div>`;
     $("#stop").classList.add("on"); document.body.classList.add("stop-open");
     map.getSource("stop-sel").setData(stopSelData());
+    syncStopFav();
     clearInterval(stopTimer);
     refreshStop();
     stopTimer = setInterval(refreshStop, STOP_REFRESH_MS);
@@ -1092,7 +1240,7 @@
         <div class="dot ${isNow ? "now" : ""}"></div>
         ${badge(d.type, d.line)}
         <div class="meta">
-          <div class="dest">→ ${esc(d.dest)}</div>
+          <div class="dest">${isFavLine(d.type, d.line) ? `<span class="star">♥</span>` : ""}→ ${esc(d.dest)}</div>
           <div class="info"><span>${fmtClock(d.expected)}</span>${status}${platform}</div>
         </div>
       </div>`;
@@ -1668,6 +1816,7 @@
       rows.push({ v, d, approaching });
     }
     rows.sort((a, b) => (a.approaching === b.approaching ? a.d - b.d : a.approaching ? -1 : 1));
+    if (favMode) rows.sort((a, b) => isFavLine(b.v.data.type, b.v.data.line) - isFavLine(a.v.data.type, a.v.data.line));
     const list = $("#nearList");
     if (!rows.length) {
       list.innerHTML = `<div class="empty">🍃 Nothing within ${fmtDist(radiusM)} right now.<br>Widen the radius or wait a moment.</div>`;
@@ -1677,7 +1826,7 @@
       <div class="item" data-id="${esc(v.data.id)}">
         ${badge(v.data.type, v.data.label || v.data.line)}
         <div class="meta">
-          <div class="dest">${v.data.type === "train" ? esc(v.data.route) : "→ " + esc(v.data.dest || "—")}</div>
+          <div class="dest">${isFavLine(v.data.type, v.data.line) ? `<span class="star">♥</span>` : ""}${v.data.type === "train" ? esc(v.data.route) : "→ " + esc(v.data.dest || "—")}</div>
           <div class="info"><span>${TYPE_LABEL[v.data.type]}</span><span class="tag ${approaching ? "approach" : "away"}">${approaching ? "approaching" : "moving away"}</span></div>
         </div>
         <div class="dist">${fmtDist(d)}<small>${fmtWalk(d)}</small></div>

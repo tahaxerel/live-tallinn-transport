@@ -100,6 +100,14 @@ stop,<siriId>
 bus,42,38566,38608,Väike-Õismäe,68,Z     # type,line,expected,scheduled,dest,secondsUntil,lowFloor
 ```
 
+## Favourites
+
+Tap ♡ in a stop panel or on a vehicle card to favourite a stop or a line
+(trains by route). The ❤️ Favorites chip toggles focus mode: favourite lines
+stay bright while everything else is dimmed, favourite stops get a red heart
+marker and other stops fade. The list under the search box (when empty)
+shows your favourites for quick access and removal. Stored in localStorage.
+
 ## Mobile
 
 The layout is mobile-first: compact top bar with horizontally scrolling
