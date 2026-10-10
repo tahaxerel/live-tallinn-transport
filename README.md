@@ -38,6 +38,9 @@ upstream request. `vercel.json` sets a 10 s function timeout.
   - `GET /api/geocode?q=...` → places, addresses and stops around Tallinn (Transitous)
   - `GET /api/trip?id=...` → a trip's full stop sequence, timetable and geometry
     (used to match the live vehicle you will board)
+  - `GET /api/station?name=&lat=&lon=` → next trains from an Elron station
+    (Transitous stoptimes on the matching `ee-elron_*` stop, rail modes only,
+    with real-time delay where available)
 - `public/index.html` — MapLibre GL + OpenFreeMap light style, pastel UI with
   🚋 🚌 🚎 emoji markers (Nunito font, no build step). Vehicles animate
   smoothly between feed updates; heading arrow per vehicle; filter by type or
@@ -74,8 +77,8 @@ type,line,lon*1e6,lat*1e6,,heading,vehicleId,lowFloor(Z|false),?,destination
 
 Elron publishes its live map data as JSON (`map_data.json`: trip number,
 route like "Tartu-Tallinn", position, heading, speed, delay in minutes, last
-stop, notices). The city SIRI endpoint has no train departures, so stations
-open a note pointing to directions; Transitous already routes with Elron
+stop, notices). The city SIRI endpoint has no train departures, so station
+boards come from Transitous stoptimes instead; Transitous already routes with Elron
 (R12, R16, R31 …) and live tracking matches a train to the leg by projecting
 positions onto the railway geometry.
 

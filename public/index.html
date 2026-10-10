@@ -945,14 +945,16 @@
   let lastStopData = null;
 
   function openStop(s, onlySiri = null) {
-    if (s.train) { // Elron station: no live board from the city feed, offer directions instead
-      curStop = { name: s.name, platforms: [s], letters: {}, ids: "", only: null, train: true };
+    if (s.train) { // Elron station: departures come from the national timetable (Transitous), not the city feed
+      curStop = { name: s.name, platforms: [s], letters: {}, ids: "", only: null, train: true, station: s };
       lastStopData = null; clearInterval(stopTimer);
       $("#stopName").textContent = s.name; $("#stopUpdated").textContent = "";
       $("#stopTabs").className = "tabs"; $("#stopTabs").innerHTML = "";
-      $("#stopList").innerHTML = `<div class="empty">🚆 Elron train station${s.note ? `<br><br>⚠️ ${esc(s.note)}` : ""}<br><br>Tap <b>🧭 Go</b> for train directions here, or tap a train on the map to see where it is.</div>`;
+      $("#stopList").innerHTML = `<div class="empty">Loading trains…</div>`;
       $("#stop").classList.add("on"); document.body.classList.add("stop-open");
       map.getSource("stop-sel").setData({ type: "FeatureCollection", features: [{ type: "Feature", properties: { label: "" }, geometry: { type: "Point", coordinates: [s.lon, s.lat] } }] });
+      refreshStop();
+      stopTimer = setInterval(refreshStop, 30000);
       return;
     }
     const g = groupFor(s);
@@ -979,6 +981,18 @@
   async function refreshStop() {
     if (!curStop) return;
     const mine = curStop;
+    if (mine.train) {
+      try {
+        const st = mine.station;
+        const j = await (await fetch(`/api/station?name=${encodeURIComponent(st.name)}&lat=${st.lat}&lon=${st.lon}`, { cache: "no-store" })).json();
+        if (curStop !== mine) return;
+        stopFetchedAt = Date.now();
+        renderStation(j, st);
+      } catch (e) {
+        if (curStop === mine) $("#stopList").innerHTML = `<div class="empty">Couldn't load the train timetable.<br>Retrying shortly.</div>`;
+      }
+      return;
+    }
     try {
       const j = await (await fetch(`/api/departures?ids=${mine.ids}`, { cache: "no-store" })).json();
       if (curStop !== mine) return;
@@ -1008,6 +1022,34 @@
   function stopSelData() {
     const ps = curStop.platforms.filter((p) => !curStop.only || p.siri === curStop.only);
     return { type: "FeatureCollection", features: ps.map((p) => ({ type: "Feature", properties: { label: curStop.platforms.length > 1 ? curStop.letters[p.siri] : "" }, geometry: { type: "Point", coordinates: [p.lon, p.lat] } })) };
+  }
+  function renderStation(j, st) {
+    const now = Date.now();
+    const deps = (j.departures || []).filter((d) => new Date(d.dep).getTime() > now - 60000).slice(0, 10);
+    if (!deps.length) {
+      $("#stopList").innerHTML = `<div class="empty">😴 No more trains from ${esc(st.name)} today.${st.note ? `<br><br>⚠️ ${esc(st.note)}` : ""}</div>`;
+      return;
+    }
+    const note = st.note ? `<div class="empty" style="padding:8px 16px 0">⚠️ ${esc(st.note)}</div>` : "";
+    $("#stopList").innerHTML = note + `<div class="timeline">` + deps.map((d) => {
+      const t = new Date(d.dep).getTime(), sched = new Date(d.sched).getTime();
+      const min = Math.round((t - now) / 60000);
+      const delta = Math.round((t - sched) / 60000);
+      const isNow = min <= 0;
+      const status = d.cancelled ? `<span class="tag late">cancelled</span>`
+        : d.realtime ? (Math.abs(delta) < 1 ? `<span class="tag ontime">on time</span>` : delta > 0 ? `<span class="tag late">+${delta} min</span>` : `<span class="tag early">${delta} min</span>`)
+        : `<span class="tag plat">timetable</span>`;
+      const when = min >= 60 ? `${Math.floor(min / 60)}<small>h ${min % 60}m</small>` : `${isNow ? "now" : min}<small>${isNow ? "" : "min"}</small>`;
+      return `<div class="dep train">
+        <div class="when ${isNow ? "now" : ""}">${when}</div>
+        <div class="dot ${isNow ? "now" : ""}"></div>
+        ${badge("train", d.line)}
+        <div class="meta">
+          <div class="dest">→ ${esc(d.headsign)}</div>
+          <div class="info"><span>${fmtT(d.dep)}</span>${status}</div>
+        </div>
+      </div>`;
+    }).join("") + `</div>`;
   }
   function renderStop(j) {
     if (!curStop) return;
