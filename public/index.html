@@ -282,6 +282,16 @@
   .ride.alert { background: rgba(255,154,118,0.22); border-color: var(--tram); animation: ridepulse 1.2s infinite; font-size: 16px; }
   @keyframes ridepulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(255,154,118,0.5); } 50% { box-shadow: 0 0 0 8px rgba(255,154,118,0); } }
   .ride.done { background: rgba(183,163,232,0.2); border-color: var(--stop); }
+  /* first-run card: one place to grant location + compass */
+  .onb { position: fixed; inset: 0; z-index: 2000; display: none; align-items: flex-end; justify-content: center; background: rgba(45,42,50,0.25); backdrop-filter: blur(3px); padding: 16px; padding-bottom: calc(20px + env(safe-area-inset-bottom)); }
+  .onb.on { display: flex; }
+  @media (min-width: 720px) { .onb { align-items: center; } }
+  .onb .card { width: 100%; max-width: 400px; background: var(--panel); border-radius: 26px; box-shadow: var(--shadow); padding: 22px 20px 18px; text-align: center; }
+  .onb .big { font-size: 40px; line-height: 1; margin-bottom: 8px; }
+  .onb h3 { margin: 0 0 6px; font-size: 18px; font-weight: 900; }
+  .onb p { margin: 0 0 16px; color: var(--muted); font-weight: 600; font-size: 13px; line-height: 1.45; }
+  .onb .btn { display: block; width: 100%; padding: 14px; border-radius: 999px; border: none; font: inherit; font-weight: 900; font-size: 15px; cursor: pointer; background: var(--me); color: var(--text); box-shadow: 0 8px 22px rgba(255,194,71,0.45); }
+  .onb .later { display: block; width: 100%; margin-top: 8px; padding: 10px; border: none; background: transparent; font: inherit; font-weight: 700; font-size: 13px; color: var(--muted); cursor: pointer; }
   .dirgo { background: var(--soft); border: none; border-radius: 999px; height: 30px; padding: 0 10px; font: inherit; font-weight: 800; font-size: 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; }
   .dirgo:hover { background: rgba(45,42,50,0.1); }
   .result .go { margin-top: 2px; }
@@ -465,6 +475,16 @@
     <span class="emo">📍</span>
     <span>Near me</span>
   </button>
+</div>
+
+<div class="onb" id="onb">
+  <div class="card">
+    <div class="big">📍</div>
+    <h3>See what's around you</h3>
+    <p>Tallinn Live uses your location to show the vehicles passing by, and your phone's compass to show which way you're facing. Your phone will ask once for each. Nothing is stored or sent anywhere.</p>
+    <button class="btn" id="onbGo">Turn on location &amp; compass</button>
+    <button class="later" id="onbLater">Not now</button>
+  </div>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/5.6.0/maplibre-gl.min.js"></script>
@@ -1114,7 +1134,7 @@
   }
   $("#dirClose").addEventListener("click", closeDirections);
   $("#dirChip").addEventListener("click", () => { askNotify(); openDirections(); if (isMobile()) closeSearch(); });
-  const askNotify = () => { try { if ("Notification" in window && Notification.permission === "default") Notification.requestPermission(); } catch {} };
+  const askNotify = () => { startCompass(); try { if ("Notification" in window && Notification.permission === "default") Notification.requestPermission(); } catch {} };
   $("#stopDir").addEventListener("click", () => {
     askNotify();
     if (!curStop) return;
@@ -1551,9 +1571,14 @@
     if (meEl) { meEl.style.setProperty("--h", heading.toFixed(1) + "deg"); meEl.classList.add("heading"); }
   }
   window.tallinnLive.compass = { state: () => ({ compassOn, heading }), feed: onOrientation };
-  // Must be called from a user gesture (iOS asks for permission).
-  function startCompass() {
-    if (compassOn) return;
+  // Remembered choices (per browser): did we onboard, did the user say no to the compass?
+  const pref = { get: (k) => { try { return localStorage.getItem("tl." + k); } catch { return null; } }, set: (k, v) => { try { localStorage.setItem("tl." + k, v); } catch {} } };
+  // Must be called from a user gesture on iOS (it shows the Motion & Orientation prompt).
+  let compassAsked = false;
+  function startCompass(force = false) {
+    if (compassOn || (compassAsked && !force)) return;
+    if (pref.get("compass") === "denied" && !force) return; // they said no once; don't nag every launch
+    compassAsked = true;
     const attach = () => {
       compassOn = true;
       if ("ondeviceorientationabsolute" in window) window.addEventListener("deviceorientationabsolute", onOrientation);
@@ -1561,7 +1586,7 @@
     };
     try {
       if (typeof DeviceOrientationEvent !== "undefined" && typeof DeviceOrientationEvent.requestPermission === "function") {
-        DeviceOrientationEvent.requestPermission().then((r) => { if (r === "granted") attach(); }).catch(() => {});
+        DeviceOrientationEvent.requestPermission().then((r) => { pref.set("compass", r); if (r === "granted") attach(); }).catch(() => {});
       } else attach();
     } catch {}
   }
@@ -1590,8 +1615,22 @@
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 }
     );
   }
-  // On load: ask for location straight away and show the blue dot, no list yet.
-  ready.then(() => { if (canLocate()) startWatch(); });
+  // First visit: one card explains both permissions and asks for them in a single tap.
+  // Later visits: location starts quietly (the OS may still confirm), the compass is never asked for on its own.
+  const onboarded = pref.get("onb") === "1";
+  window.tallinnLive.prefs = () => ({ onboarded, onb: pref.get("onb"), compass: pref.get("compass") });
+  function finishOnboarding() { pref.set("onb", "1"); $("#onb").classList.remove("on"); }
+  $("#onbGo").addEventListener("click", () => {
+    startCompass(true);               // inside the tap, so iOS allows the prompt
+    if (canLocate()) startWatch();
+    finishOnboarding();
+  });
+  $("#onbLater").addEventListener("click", () => { pref.set("compass", "denied"); finishOnboarding(); });
+  ready.then(() => {
+    if (!canLocate()) return;
+    if (onboarded) startWatch();
+    else $("#onb").classList.add("on");
+  });
 
   $("#nearBtn").addEventListener("click", () => {
     const label = $("#nearBtn span:last-child");
@@ -1605,11 +1644,10 @@
   });
   $("#nearClose").addEventListener("click", closeNear);
   map.on("contextmenu", (e) => { e.preventDefault(); manual = true; setMe(e.lngLat.lat, e.lngLat.lng, false); openNear(false); });
-  // Compass: Android allows it straight away; iOS needs a tap, so also hook the first touch.
+  // Compass: Android allows it without a prompt, so start it right away. iOS needs a tap and shows a
+  // prompt, so there it only starts from the onboarding card or from a Near me / Directions tap.
   const needsGesture = typeof DeviceOrientationEvent !== "undefined" && typeof DeviceOrientationEvent.requestPermission === "function";
   if (!needsGesture) startCompass();
-  document.addEventListener("touchend", () => startCompass(), { once: true, passive: true });
-  document.addEventListener("click", () => startCompass(), { once: true });
   $("#radius").addEventListener("input", (e) => {
     radiusM = Number(e.target.value);
     $("#radiusVal").textContent = fmtDist(radiusM);
