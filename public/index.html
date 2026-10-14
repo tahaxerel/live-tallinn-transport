@@ -1234,25 +1234,30 @@
     if (mine.train) {
       try {
         const st = mine.station;
-        const j = await (await fetch(`/api/station?name=${encodeURIComponent(st.name)}&lat=${st.lat}&lon=${st.lon}`, { cache: "no-store" })).json();
+        const r = await fetch(`/api/station?name=${encodeURIComponent(st.name)}&lat=${st.lat}&lon=${st.lon}`, { cache: "no-store" });
+        const j = await r.json();
         if (curStop !== mine) return;
+        if (!r.ok || j.error) throw new Error(j.error || ("HTTP " + r.status));
         stopFetchedAt = Date.now();
         renderStation(j, st);
+        if (j.stale) $("#stopUpdated").textContent = lang === "et" ? "vana andmed" : "stale data";
       } catch (e) {
-        if (curStop === mine) { $("#stopList").innerHTML = `<div class="empty">${t("departuresFailed")}</div>`; setTimeout(() => { if (curStop === mine) refreshStop(); }, 4000); }
+        if (curStop === mine) { $("#stopList").innerHTML = `<div class="empty">${t("departuresFailed")}<br><small style="opacity:.7">${esc(String(e.message || e))}</small></div>`; setTimeout(() => { if (curStop === mine) refreshStop(); }, 4000); }
       }
       return;
     }
     try {
-      const j = await (await fetch(`/api/departures?ids=${mine.ids}`, { cache: "no-store" })).json();
+      const r = await fetch(`/api/departures?ids=${mine.ids}`, { cache: "no-store" });
+      const j = await r.json();
       if (curStop !== mine) return;
+      if (!r.ok || j.error) throw new Error(j.error || ("HTTP " + r.status));
       stopFetchedAt = Date.now();
       lastStopData = j;
       dirCache.set(mine.ids, { at: Date.now(), dirs: platformDirs(j.departures) });
       renderTabs(j);
       renderStop(j);
     } catch (e) {
-      if (curStop === mine) { $("#stopList").innerHTML = `<div class="empty">${t("departuresFailed")}</div>`; setTimeout(() => { if (curStop === mine) refreshStop(); }, 4000); }
+      if (curStop === mine) { $("#stopList").innerHTML = `<div class="empty">${t("departuresFailed")}<br><small style="opacity:.7">${esc(String(e.message || e))}</small></div>`; setTimeout(() => { if (curStop === mine) refreshStop(); }, 4000); }
     }
   }
   function renderTabs(j) {
