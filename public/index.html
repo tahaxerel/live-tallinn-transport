@@ -1239,7 +1239,7 @@
         stopFetchedAt = Date.now();
         renderStation(j, st);
       } catch (e) {
-        if (curStop === mine) $("#stopList").innerHTML = `<div class="empty">${t("departuresFailed")}</div>`;
+        if (curStop === mine) { $("#stopList").innerHTML = `<div class="empty">${t("departuresFailed")}</div>`; setTimeout(() => { if (curStop === mine) refreshStop(); }, 4000); }
       }
       return;
     }
@@ -1252,7 +1252,7 @@
       renderTabs(j);
       renderStop(j);
     } catch (e) {
-      if (curStop === mine) $("#stopList").innerHTML = `<div class="empty">${t("departuresFailed")}</div>`;
+      if (curStop === mine) { $("#stopList").innerHTML = `<div class="empty">${t("departuresFailed")}</div>`; setTimeout(() => { if (curStop === mine) refreshStop(); }, 4000); }
     }
   }
   function renderTabs(j) {
