@@ -1823,7 +1823,6 @@
   let compassAsked = false;
   function startCompass(force = false) {
     if (compassOn || (compassAsked && !force)) return;
-    if (pref.get("compass") === "denied" && !force) return; // they said no once; don't nag every launch
     compassAsked = true;
     const attach = () => {
       compassOn = true;
@@ -1872,19 +1871,17 @@
     if (canLocate()) startWatch();
     finishOnboarding();
   });
-  $("#onbLater").addEventListener("click", () => { pref.set("compass", "denied"); finishOnboarding(); });
+  $("#onbLater").addEventListener("click", () => finishOnboarding());
   // Does the OS remember our location permission? (Permissions API; iOS Safari 16+ supports it.)
   async function geoState() {
     try { if (navigator.permissions?.query) return (await navigator.permissions.query({ name: "geolocation" })).state; } catch {}
     return "unknown";
   }
-  ready.then(async () => {
+  window.tallinnLive.locate = () => startWatch();
+  ready.then(() => {
     if (!canLocate()) return;
     if (!onboarded) { $("#onb").classList.add("on"); return; }
-    const st = await geoState();
-    // Granted and remembered → start quietly. On iOS, if the OS forgot the grant, do NOT re-prompt at launch;
-    // location then starts only when the user taps Near me / Directions. Android & desktop remember, so start.
-    if (st === "granted" || (!isIOS && st !== "denied")) startWatch();
+    startWatch(); // location on by default after the first-run card; the OS only prompts if it forgot the grant
   });
 
   $("#nearBtn").addEventListener("click", () => {
@@ -1899,10 +1896,11 @@
   });
   $("#nearClose").addEventListener("click", closeNear);
   map.on("contextmenu", (e) => { e.preventDefault(); manual = true; setMe(e.lngLat.lat, e.lngLat.lng, false); openNear(false); });
-  // Compass: Android allows it without a prompt, so start it right away. iOS needs a tap and shows a
-  // prompt, so there it only starts from the onboarding card or from a Near me / Directions tap.
+  // Compass: Android allows it without a prompt, so start it right away. iOS only allows the request inside a
+  // user gesture, so there it starts on the very first touch anywhere (silently when iOS remembers the grant).
   const needsGesture = typeof DeviceOrientationEvent !== "undefined" && typeof DeviceOrientationEvent.requestPermission === "function";
   if (!needsGesture) startCompass();
+  else if (onboarded) for (const ev of ["touchend", "pointerup", "click"]) document.addEventListener(ev, () => startCompass(true), { once: true, capture: true, passive: true });
   $("#radius").addEventListener("input", (e) => {
     radiusM = Number(e.target.value);
     $("#radiusVal").textContent = fmtDist(radiusM);
