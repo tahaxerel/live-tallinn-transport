@@ -504,6 +504,7 @@
     <div class="big">📍</div>
     <h3 data-i18n="onbTitle">See what's around you</h3>
     <p data-i18n="onbBody">Tallinn Live uses your location to show the vehicles passing by, and your phone's compass to show which way you're facing. Your phone will ask once for each. Nothing is stored or sent anywhere.</p>
+    <p class="hint" id="onbIos" style="display:none;margin:-6px 0 12px;text-align:left"></p>
     <button class="btn" id="onbGo" data-i18n="onbGo">Turn on location &amp; compass</button>
     <button class="later" id="onbLater" data-i18n="onbLater">Not now</button>
   </div>
@@ -513,6 +514,7 @@
 <script>
 (() => {
   const $ = (s) => document.querySelector(s);
+  const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 
   // ---------- Languages ----------
   const I18N = {
@@ -524,6 +526,7 @@
       chooseStart: "Choose starting point", chooseDest: "Choose destination", leavingNow: "Leaving now", publicTransport: "Public transport",
       dirEmpty: "Pick a destination: tap a stop, search a place, or type above.", whereTo: "Where do you want to go?<br>Type a stop, place or address above.",
       go: "Go", passingBy: "Passing by", radius: "Radius", longPressHint: "Long-press (or right-click) the map to move your location.", nearMe: "Near me", locating: "Locating…",
+      onbIos: "iPhone tip: iOS may forget this permission between launches. To make it permanent: in Safari tap <b>aA</b> → <b>Website Settings</b> → <b>Location: Allow</b>. If you added the app to your Home Screen: <b>Settings</b> → <b>Apps</b> → <b>Tallinn Live</b> → <b>Location: While Using</b>.",
       onbTitle: "See what's around you", onbBody: "Tallinn Live uses your location to show the vehicles passing by, and your phone's compass to show which way you're facing. Your phone will ask once for each. Nothing is stored or sent anywhere.", onbGo: "Turn on location & compass", onbLater: "Not now",
       vehicle: "vehicle", lowFloor: "♿ low floor", lastStop: "Last stop", onTime: "on time", heldAtStop: "held at a stop", late: "{n} min late", early: "{n} min early", trainN: "Train {n}",
       loadingDepartures: "Loading departures…", noDepartures: "No upcoming departures from {name}.", platform: "platform", departuresFailed: "Couldn't load departures.<br>Retrying shortly.", timetable: "timetable", cancelled: "cancelled", now: "now", min: "min",
@@ -550,6 +553,7 @@
       chooseStart: "Vali alguspunkt", chooseDest: "Vali sihtkoht", leavingNow: "Väljub kohe", publicTransport: "Ühistransport",
       dirEmpty: "Vali sihtkoht: puuduta peatust, otsi kohta või kirjuta ülal.", whereTo: "Kuhu soovid minna?<br>Kirjuta ülal peatus, koht või aadress.",
       go: "Mine", passingBy: "Lähedal", radius: "Raadius", longPressHint: "Vajuta kaardil pikalt, et oma asukohta liigutada.", nearMe: "Minu lähedal", locating: "Otsin asukohta…",
+      onbIos: "iPhone'i nipp: iOS võib selle loa käivituste vahel unustada. Et see püsiks: Safaris puuduta <b>aA</b> → <b>Veebisaidi seaded</b> → <b>Asukoht: Luba</b>. Kui lisasid rakenduse avakuvale: <b>Seaded</b> → <b>Rakendused</b> → <b>Tallinn Live</b> → <b>Asukoht: Kasutamise ajal</b>.",
       onbTitle: "Vaata, mis sinu ümber liigub", onbBody: "Tallinn Live kasutab sinu asukohta, et näidata mööduvaid sõidukeid, ja telefoni kompassi, et näidata, kuhupoole sa vaatad. Telefon küsib kummagi jaoks luba ühe korra. Midagi ei salvestata ega saadeta.", onbGo: "Luba asukoht ja kompass", onbLater: "Mitte praegu",
       vehicle: "sõiduk", lowFloor: "♿ madalapõhjaline", lastStop: "Viimane peatus", onTime: "graafikus", heldAtStop: "seisab peatuses", late: "{n} min hilinemisega", early: "{n} min varem", trainN: "Rong {n}",
       loadingDepartures: "Laen väljumisi…", noDepartures: "Peatusest {name} pole lähiajal väljumisi.", platform: "platvorm", departuresFailed: "Väljumisi ei õnnestunud laadida.<br>Proovin varsti uuesti.", timetable: "sõiduplaan", cancelled: "tühistatud", now: "nüüd", min: "min",
@@ -1862,16 +1866,25 @@
   const onboarded = pref.get("onb") === "1";
   window.tallinnLive.prefs = () => ({ onboarded, onb: pref.get("onb"), compass: pref.get("compass") });
   function finishOnboarding() { pref.set("onb", "1"); $("#onb").classList.remove("on"); }
+  if (isIOS) { $("#onbIos").style.display = "block"; $("#onbIos").innerHTML = t("onbIos"); }
   $("#onbGo").addEventListener("click", () => {
     startCompass(true);               // inside the tap, so iOS allows the prompt
     if (canLocate()) startWatch();
     finishOnboarding();
   });
   $("#onbLater").addEventListener("click", () => { pref.set("compass", "denied"); finishOnboarding(); });
-  ready.then(() => {
+  // Does the OS remember our location permission? (Permissions API; iOS Safari 16+ supports it.)
+  async function geoState() {
+    try { if (navigator.permissions?.query) return (await navigator.permissions.query({ name: "geolocation" })).state; } catch {}
+    return "unknown";
+  }
+  ready.then(async () => {
     if (!canLocate()) return;
-    if (onboarded) startWatch();
-    else $("#onb").classList.add("on");
+    if (!onboarded) { $("#onb").classList.add("on"); return; }
+    const st = await geoState();
+    // Granted and remembered → start quietly. On iOS, if the OS forgot the grant, do NOT re-prompt at launch;
+    // location then starts only when the user taps Near me / Directions. Android & desktop remember, so start.
+    if (st === "granted" || (!isIOS && st !== "denied")) startWatch();
   });
 
   $("#nearBtn").addEventListener("click", () => {
