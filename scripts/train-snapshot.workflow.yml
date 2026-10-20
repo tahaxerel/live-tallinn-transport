@@ -1,0 +1,25 @@
+name: Daily train timetable snapshot
+
+on:
+  schedule:
+    - cron: "30 1 * * *"   # 04:30 Tallinn (summer) / 03:30 (winter)
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node scripts/snapshot-trains.js
+      - name: Commit if changed
+        run: |
+          git config user.name "tallinn-live-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add data/train-boards.json
+          git diff --cached --quiet && echo "no change" || git commit -m "data: daily train timetable snapshot" && git push

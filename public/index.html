@@ -1240,9 +1240,15 @@
         if (!r.ok || j.error) throw new Error(j.error || ("HTTP " + r.status));
         stopFetchedAt = Date.now();
         renderStation(j, st);
-        if (j.stale) $("#stopUpdated").textContent = lang === "et" ? "vana andmed" : "stale data";
+        if (j.stale) $("#stopUpdated").textContent = j.source === "snapshot" ? (lang === "et" ? "sõiduplaan (ilma otseandmeteta)" : "timetable (no live data)") : (lang === "et" ? "vana andmed" : "stale data");
+        try { localStorage.setItem("tl.board." + st.name, JSON.stringify({ at: Date.now(), j })); } catch {}
       } catch (e) {
-        if (curStop === mine) { $("#stopList").innerHTML = `<div class="empty">${t("departuresFailed")}<br><small style="opacity:.7">${esc(String(e.message || e))}</small></div>`; setTimeout(() => { if (curStop === mine) refreshStop(); }, 4000); }
+        if (curStop !== mine) return;
+        // Last resort: the board we saw most recently on this phone (if still mostly in the future).
+        let shown = false;
+        try { const c = JSON.parse(localStorage.getItem("tl.board." + st.name) || "null"); if (c && Date.now() - c.at < 6 * 3600000) { renderStation(c.j, st); $("#stopUpdated").textContent = lang === "et" ? "vahemälust" : "from cache"; shown = true; } } catch {}
+        if (!shown) $("#stopList").innerHTML = `<div class="empty">${t("departuresFailed")}<br><small style="opacity:.7">${esc(String(e.message || e))}</small></div>`;
+        setTimeout(() => { if (curStop === mine) refreshStop(); }, 4000);
       }
       return;
     }
@@ -1287,9 +1293,9 @@
     }
     const note = st.note ? `<div class="empty" style="padding:8px 16px 0">⚠️ ${esc(st.note)}</div>` : "";
     $("#stopList").innerHTML = note + `<div class="timeline">` + deps.map((d) => {
-      const t = new Date(d.dep).getTime(), sched = new Date(d.sched).getTime();
-      const min = Math.round((t - now) / 60000);
-      const delta = Math.round((t - sched) / 60000);
+      const depMs = new Date(d.dep).getTime(), sched = new Date(d.sched).getTime();
+      const min = Math.round((depMs - now) / 60000);
+      const delta = Math.round((depMs - sched) / 60000);
       const isNow = min <= 0;
       const status = d.cancelled ? `<span class="tag late">${t("cancelled")}</span>`
         : d.realtime ? (Math.abs(delta) < 1 ? `<span class="tag ontime">${t("onTime")}</span>` : delta > 0 ? `<span class="tag late">+${delta} min</span>` : `<span class="tag early">${delta} min</span>`)
