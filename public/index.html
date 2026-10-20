@@ -526,7 +526,7 @@
       chooseStart: "Choose starting point", chooseDest: "Choose destination", leavingNow: "Leaving now", publicTransport: "Public transport",
       dirEmpty: "Pick a destination: tap a stop, search a place, or type above.", whereTo: "Where do you want to go?<br>Type a stop, place or address above.",
       go: "Go", passingBy: "Passing by", radius: "Radius", longPressHint: "Long-press (or right-click) the map to move your location.", nearMe: "Near me", locating: "Locating…",
-      onbIos: "iPhone tip: iOS may forget this permission between launches. To make it permanent: in Safari tap <b>aA</b> → <b>Website Settings</b> → <b>Location: Allow</b>. If you added the app to your Home Screen: <b>Settings</b> → <b>Apps</b> → <b>Tallinn Live</b> → <b>Location: While Using</b>.",
+      onbIos: "iPhone tip: to stop iOS asking for location at every launch, set it to Allow once: in Safari tap <b>aA</b> → <b>Website Settings</b> → <b>Location: Allow</b>; for the Home Screen app: <b>Settings</b> → <b>Apps</b> → <b>Tallinn Live</b> → <b>Location: While Using</b>. The compass (Motion &amp; Orientation) can't be remembered by iOS, so we only ask for it when you open Near me or Directions.",
       onbTitle: "See what's around you", onbBody: "Tallinn Live uses your location to show the vehicles passing by, and your phone's compass to show which way you're facing. Your phone will ask once for each. Nothing is stored or sent anywhere.", onbGo: "Turn on location & compass", onbLater: "Not now",
       vehicle: "vehicle", lowFloor: "♿ low floor", lastStop: "Last stop", onTime: "on time", heldAtStop: "held at a stop", late: "{n} min late", early: "{n} min early", trainN: "Train {n}",
       loadingDepartures: "Loading departures…", noDepartures: "No upcoming departures from {name}.", platform: "platform", departuresFailed: "Couldn't load departures.<br>Retrying shortly.", timetable: "timetable", cancelled: "cancelled", now: "now", min: "min",
@@ -553,7 +553,7 @@
       chooseStart: "Vali alguspunkt", chooseDest: "Vali sihtkoht", leavingNow: "Väljub kohe", publicTransport: "Ühistransport",
       dirEmpty: "Vali sihtkoht: puuduta peatust, otsi kohta või kirjuta ülal.", whereTo: "Kuhu soovid minna?<br>Kirjuta ülal peatus, koht või aadress.",
       go: "Mine", passingBy: "Lähedal", radius: "Raadius", longPressHint: "Vajuta kaardil pikalt, et oma asukohta liigutada.", nearMe: "Minu lähedal", locating: "Otsin asukohta…",
-      onbIos: "iPhone'i nipp: iOS võib selle loa käivituste vahel unustada. Et see püsiks: Safaris puuduta <b>aA</b> → <b>Veebisaidi seaded</b> → <b>Asukoht: Luba</b>. Kui lisasid rakenduse avakuvale: <b>Seaded</b> → <b>Rakendused</b> → <b>Tallinn Live</b> → <b>Asukoht: Kasutamise ajal</b>.",
+      onbIos: "iPhone'i nipp: et iOS ei küsiks asukohta igal käivitusel, luba see ühe korra: Safaris puuduta <b>aA</b> → <b>Veebisaidi seaded</b> → <b>Asukoht: Luba</b>; avakuva rakenduse puhul <b>Seaded</b> → <b>Rakendused</b> → <b>Tallinn Live</b> → <b>Asukoht: Kasutamise ajal</b>. Kompassi (Motion &amp; Orientation) luba iOS ei mäleta, seega küsime seda ainult siis, kui avad „Minu lähedal” või „Teekond”.",
       onbTitle: "Vaata, mis sinu ümber liigub", onbBody: "Tallinn Live kasutab sinu asukohta, et näidata mööduvaid sõidukeid, ja telefoni kompassi, et näidata, kuhupoole sa vaatad. Telefon küsib kummagi jaoks luba ühe korra. Midagi ei salvestata ega saadeta.", onbGo: "Luba asukoht ja kompass", onbLater: "Mitte praegu",
       vehicle: "sõiduk", lowFloor: "♿ madalapõhjaline", lastStop: "Viimane peatus", onTime: "graafikus", heldAtStop: "seisab peatuses", late: "{n} min hilinemisega", early: "{n} min varem", trainN: "Rong {n}",
       loadingDepartures: "Laen väljumisi…", noDepartures: "Peatusest {name} pole lähiajal väljumisi.", platform: "platvorm", departuresFailed: "Väljumisi ei õnnestunud laadida.<br>Proovin varsti uuesti.", timetable: "sõiduplaan", cancelled: "tühistatud", now: "nüüd", min: "min",
@@ -1896,11 +1896,11 @@
   });
   $("#nearClose").addEventListener("click", closeNear);
   map.on("contextmenu", (e) => { e.preventDefault(); manual = true; setMe(e.lngLat.lat, e.lngLat.lng, false); openNear(false); });
-  // Compass: Android allows it without a prompt, so start it right away. iOS only allows the request inside a
-  // user gesture, so there it starts on the very first touch anywhere (silently when iOS remembers the grant).
+  // Compass: Android allows it without a prompt, so start it right away. iOS shows its Motion & Orientation
+  // prompt on EVERY launch (WebKit does not persist that grant), so there we only ask when it matters:
+  // when Near me or Directions is opened, once per launch. Never on a random tap on a stop or vehicle.
   const needsGesture = typeof DeviceOrientationEvent !== "undefined" && typeof DeviceOrientationEvent.requestPermission === "function";
   if (!needsGesture) startCompass();
-  else if (onboarded) for (const ev of ["touchend", "pointerup", "click"]) document.addEventListener(ev, () => startCompass(true), { once: true, capture: true, passive: true });
   $("#radius").addEventListener("input", (e) => {
     radiusM = Number(e.target.value);
     $("#radiusVal").textContent = fmtDist(radiusM);
