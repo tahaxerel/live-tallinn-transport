@@ -31,7 +31,7 @@ http
       if (url.pathname === "/api/vehicles") return await json(getVehicles(), "no-store");
       if (url.pathname === "/api/stops") return await json(getStops(), "no-cache");
       if (url.pathname === "/api/departures") return await json(getDepartures(q("ids")), "no-store");
-      if (url.pathname === "/api/plan") return await json(plan(q("from"), q("to"), q("time"), q("arriveBy") === "1"), "no-store");
+      if (url.pathname === "/api/plan") return await json(plan(q("from"), q("to"), q("time"), q("arriveBy") === "1", q("n")), "no-store");
       if (url.pathname === "/api/geocode") return await json(geocode(q("q")), "no-cache");
       if (url.pathname === "/api/trip") return await json(trip(q("id")), "no-cache");
       if (url.pathname === "/api/station") return await json(station(q("name"), q("lat"), q("lon")), "no-store");
