@@ -100,6 +100,12 @@ stop,<siriId>
 bus,42,38566,38608,Väike-Õismäe,68,Z     # type,line,expected,scheduled,dest,secondsUntil,lowFloor
 ```
 
+## Analytics
+
+Vercel Web Analytics (cookieless page views) via `/_vercel/insights/script.js`
+on both pages. Turn it on in the Vercel dashboard: project → Analytics → Enable.
+Until it is enabled the script simply 404s.
+
 ## Languages
 
 Estonian and English. The default follows the device language (`et` →

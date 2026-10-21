@@ -1,6 +1,6 @@
 // Minimal service worker: makes the app installable and keeps the shell
 // reachable offline. Live data is never cached.
-const SHELL = "tallinn-live-shell-v1";
+const SHELL = "tallinn-live-shell-v2";
 const SHELL_URLS = ["/", "/index.html", "/manifest.json", "/icons/icon-192.png", "/icons/icon-512.png"];
 
 self.addEventListener("install", (e) => {
@@ -11,7 +11,8 @@ self.addEventListener("activate", (e) => {
 });
 self.addEventListener("fetch", (e) => {
   const url = new URL(e.request.url);
-  if (url.origin !== self.location.origin || url.pathname.startsWith("/api/")) return; // network only
+  if (e.request.method !== "GET") return; // analytics beacons and other POSTs go straight to the network
+  if (url.origin !== self.location.origin || url.pathname.startsWith("/api/") || url.pathname.startsWith("/_vercel/")) return; // network only
   if (e.request.mode === "navigate") {
     // Network first so deploys show up immediately; cached shell only when offline.
     e.respondWith(fetch(e.request).then((r) => { caches.open(SHELL).then((c) => c.put("/", r.clone())); return r; }).catch(() => caches.match("/")));
