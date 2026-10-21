@@ -593,8 +593,13 @@
     window.dispatchEvent(new Event("tl:lang"));
   });
   const EMOJI = { tram: "🚋", bus: "🚌", troll: "🚎", train: "🚆" };
-  const POLL_MS = 3000;
-  const ANIM_MS = 10000; // the feed is rewritten every 10 s, so glide for the full interval
+  const POLL_MS = 5000; // the feed is rewritten every ~10 s; asking more often only re-reads the same snapshot
+  // Dead reckoning: a fix we receive is already LEAD_S seconds old on average (feed cadence + pipeline),
+  // so each vehicle is drawn LEAD_S seconds ahead of its fix along its heading at its reported speed,
+  // and keeps rolling forward until the next fix. Capped so a stalled feed never sends buses off the road.
+  // The city feed never fills its speed column, so speed is estimated from consecutive fixes (trains report theirs).
+  const TUNE = { lead: 6, maxAhead: 90, roll: 12, snap: 2500, stopped: 20000, back: 4000 };
+  { const q = new URLSearchParams(location.search); for (const k of Object.keys(TUNE)) if (q.has(k)) TUNE[k] = Number(q.get(k)); }
   const STOP_REFRESH_MS = 15000;
 
   // ---------- Map ----------
@@ -717,18 +722,59 @@
     return `<div class="pop">
       ${badge(d.type, d.line)}
       <div><div class="dest">→ ${esc(d.dest || "—")} <button class="favline ${isFavLine(d.type, d.line) ? "on" : ""}" data-type="${d.type}" data-line="${esc(d.line)}" title="Favourite line ${esc(d.line)}">${isFavLine(d.type, d.line) ? "♥" : "♡"}</button></div>
-      <div class="sm">${TYPE_LABEL[d.type]} · ${t("vehicle")} ${esc(d.id)}${d.lowFloor ? " · " + t("lowFloor") : ""}</div></div>
+      <div class="sm">${TYPE_LABEL[d.type]} · ${t("vehicle")} ${esc(d.id)}${d.speed != null ? " · " + d.speed + " km/h" : ""}${d.lowFloor ? " · " + t("lowFloor") : ""}</div></div>
     </div>`;
   }
 
+  // Velocity in degrees/second from m/s + compass heading; null when the vehicle is not moving or heading is unknown.
+  function velocity(d, mps) {
+    if (!(mps > 0.5) || d.heading == null) return null;
+    const h = d.heading * Math.PI / 180;
+    return { dlon: Math.sin(h) * mps / (111320 * Math.cos(d.lat * Math.PI / 180)), dlat: Math.cos(h) * mps / 111320, mps };
+  }
+  // Where the vehicle probably is `now`, given its last fix and velocity.
+  function predict(v, now) {
+    if (!v.vel) return v.base;
+    const age = Math.min((now - v.baseAt) / 1000, TUNE.roll); // roll on for a few seconds, then wait for the feed
+    const ahead = Math.min(age + TUNE.lead, TUNE.maxAhead / v.vel.mps);
+    return [v.base[0] + v.vel.dlon * ahead, v.base[1] + v.vel.dlat * ahead];
+  }
+  const metersBetween = (a, b) => Math.hypot((b[0] - a[0]) * 111320 * Math.cos(a[1] * Math.PI / 180), (b[1] - a[1]) * 111320);
+  function setFix(v, d, now) {
+    const cur = v.m.getLngLat();
+    const disp = [cur.lng, cur.lat];
+    if (v.base[0] !== d.lon || v.base[1] !== d.lat) {
+      // Speed from the distance between fixes; the poll only sees the feed every ~10 s, so smooth it.
+      const dt = (now - v.baseAt) / 1000, dm = metersBetween(v.base, [d.lon, d.lat]);
+      if (dt >= 3 && dt <= 40 && dm < 600) { const inst = Math.min(dm / dt, 25); v.mps = v.mps == null ? inst : v.mps * 0.5 + inst * 0.5; }
+      v.base = [d.lon, d.lat]; v.baseAt = now;
+    }
+    if (d.speed != null) v.mps = d.speed / 3.6; // trains report their speed
+    v.vel = velocity(d, v.mps);
+    const target = predict(v, now);
+    v.from = disp; v.t0 = now; v.hold = null;
+    const dist = metersBetween(disp, target);
+    // A fix that lands just behind where we already drew the vehicle is older data catching up:
+    // hold still until the prediction passes the drawn point instead of sliding backwards.
+    if (v.vel) {
+      const along = ((target[0] - disp[0]) * v.vel.dlon + (target[1] - disp[1]) * v.vel.dlat);
+      if (along < 0 && dist < 60) v.hold = disp;
+    }
+    // Without a usable speed we only have the two fixes: glide between them over the feed interval.
+    v.glide = v.vel ? TUNE.snap : (dist > 30 ? 8000 : TUNE.snap);
+    v.settled = false;
+  }
   function makeVehicle(d) {
     const el = document.createElement("div");
     el.className = `veh ${d.type}`;
-    el.style.setProperty("--h", d.heading + "deg");
+    el.style.setProperty("--h", (d.heading ?? 0) + "deg");
     el.innerHTML = `<div class="dir"></div><div class="bubble"><span class="emo">${EMOJI[d.type]}</span></div><div class="pill">${esc(d.label || d.line)}</div>`;
     const popup = new maplibregl.Popup({ offset: 22, closeButton: false, closeOnClick: true });
     const m = new maplibregl.Marker({ element: el }).setLngLat([d.lon, d.lat]).setPopup(popup);
-    const v = { m, el, popup, shown: false, from: [d.lon, d.lat], to: [d.lon, d.lat], t0: performance.now(), data: d };
+    const now = performance.now();
+    const mps = d.speed != null ? d.speed / 3.6 : null;
+    const v = { m, el, popup, shown: false, from: [d.lon, d.lat], t0: now, base: [d.lon, d.lat], baseAt: now, mps, vel: velocity(d, mps), hold: null, glide: TUNE.snap, data: d };
+    v.from = predict(v, now); m.setLngLat(v.from);
     el.addEventListener("click", () => { popup.setHTML(popupHtml(v.data)); setHighlight(v.data.line); });
     return v;
   }
@@ -750,15 +796,15 @@
         show(v, visible(d));
         continue;
       }
-      // Only restart the glide when the feed actually moved the vehicle;
+      // Only take a new fix when the feed actually moved the vehicle (or its speed/heading changed);
       // the page polls faster than the feed changes.
-      if (v.to[0] !== d.lon || v.to[1] !== d.lat) {
+      if (v.base[0] !== d.lon || v.base[1] !== d.lat || v.data.speed !== d.speed || v.data.heading !== d.heading) setFix(v, d, now);
+      else if (v.vel && now - v.baseAt > TUNE.stopped) {
+        // Two feed cycles without movement: it is standing (at a stop, a light, the depot). Ease back onto its fix.
         const cur = v.m.getLngLat();
-        v.from = [cur.lng, cur.lat];
-        v.to = [d.lon, d.lat];
-        v.t0 = now;
+        v.mps = 0; v.vel = null; v.hold = null; v.from = [cur.lng, cur.lat]; v.t0 = now; v.glide = TUNE.back; v.settled = false;
       }
-      if (v.data.heading !== d.heading) v.el.style.setProperty("--h", d.heading + "deg");
+      if (v.data.heading !== d.heading) v.el.style.setProperty("--h", (d.heading ?? 0) + "deg");
       if ((v.data.label || v.data.line) !== (d.label || d.line)) v.el.querySelector(".pill").textContent = d.label || d.line;
       if (v.data.type !== d.type) { v.el.classList.remove(v.data.type); v.el.classList.add(d.type); v.el.querySelector(".bubble .emo").textContent = EMOJI[d.type]; }
       v.data = d;
@@ -777,15 +823,28 @@
   function animate() {
     const now = performance.now();
     for (const v of vehicles.values()) {
-      if (!v.shown) continue;
-      const t = (now - v.t0) / ANIM_MS;
-      if (t >= 1) { if (!v.settled) { v.m.setLngLat(v.to); v.settled = true; } continue; }
-      v.settled = false;
-      // Linear so motion stays continuous from one feed update to the next.
-      v.m.setLngLat([v.from[0] + (v.to[0] - v.from[0]) * t, v.from[1] + (v.to[1] - v.from[1]) * t]);
+      if (!v.shown || v.settled) continue;
+      let target = predict(v, now);
+      if (v.hold) {
+        // Stay put until the prediction has moved past the point we are holding.
+        const along = (target[0] - v.hold[0]) * v.vel.dlon + (target[1] - v.hold[1]) * v.vel.dlat;
+        if (along < 0) { v.m.setLngLat(v.hold); continue; }
+        v.hold = null; v.from = target; v.t0 = now;
+      }
+      const t = (now - v.t0) / v.glide;
+      if (t >= 1) {
+        v.m.setLngLat(target);
+        // A stopped vehicle (or a quiet feed) has nothing left to animate until the next fix.
+        if (!v.vel || now - v.baseAt > TUNE.roll * 1000) v.settled = true;
+        continue;
+      }
+      // Linear blend from where it was drawn to the moving prediction, so motion never jumps.
+      v.m.setLngLat([v.from[0] + (target[0] - v.from[0]) * t, v.from[1] + (target[1] - v.from[1]) * t]);
     }
     requestAnimationFrame(animate);
   }
+  window.tallinnLive.tune = (o) => Object.assign(TUNE, o);
+  window.tallinnLive.vehicles = vehicles;
   requestAnimationFrame(animate);
 
   function refreshCounts(list) {
