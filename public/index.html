@@ -205,7 +205,10 @@
     #side { left: 0; right: 0; bottom: 0; max-height: 100vh; gap: 0; }
     #nearBtn { margin: 0 12px calc(34px + env(safe-area-inset-bottom)) 0; }
     .maplibregl-ctrl-attrib.maplibregl-compact { border-radius: 999px; margin: 0 6px 6px 0 !important; }
-    #side > .panel { border-radius: 24px 24px 0 0; border-bottom: none; padding-bottom: env(safe-area-inset-bottom); transition: max-height .25s ease; }
+    #side > .panel { border-radius: 24px 24px 0 0; border-bottom: none; padding-bottom: env(safe-area-inset-bottom); transition: max-height .25s ease, transform .22s ease; }
+    #side > .panel.dragging { transition: none; }
+    /* iOS zooms into any field under 16px; keep phones at 16px and desktops compact. */
+    #top .search input, .fields input { font-size: 16px; }
     #near.on, #stop.on, #routes.on { max-height: 52vh; }
     #near.on.tall, #stop.on.tall, #routes.on.tall { max-height: 90vh; }
     body.routes-open #near, body.routes-open #nearBtn { display: none !important; }
@@ -968,11 +971,43 @@
   const syncStopsChip = () => $("#stopsChip").classList.toggle("off", !$("#stopsToggle").checked);
   $("#stopsToggle").addEventListener("change", syncStopsChip);
   syncStopsChip();
+  // Bottom sheets on phones: tap the header to expand, drag the handle/header down to close, up to expand.
+  const SHEET_CLOSE = { stop: () => closeStop(), near: () => closeNear(), dir: () => closeDirections(), routes: () => closeRoutes() };
   for (const sel of ["#stop header", "#near header", "#dir header", "#routes header"]) {
+    const panel = $(sel).closest(".panel");
+    let drag = null;
     $(sel).addEventListener("click", (e) => {
-      if (e.target.closest("button")) return;
-      if (isMobile()) $(sel).closest(".panel").classList.toggle("tall");
+      if (e.target.closest("button") || panel.dataset.dragged) return;
+      if (isMobile()) panel.classList.toggle("tall");
     });
+    for (const h of [$(sel), panel.querySelector(".grab")]) {
+      if (!h) continue;
+      h.addEventListener("touchstart", (e) => {
+        if (!isMobile() || e.touches.length !== 1 || e.target.closest("button")) return;
+        drag = { y: e.touches[0].clientY, t: performance.now(), dy: 0 };
+        delete panel.dataset.dragged;
+        panel.classList.add("dragging");
+      }, { passive: true });
+      h.addEventListener("touchmove", (e) => {
+        if (!drag) return;
+        drag.dy = e.touches[0].clientY - drag.y;
+        if (Math.abs(drag.dy) > 8) panel.dataset.dragged = "1";
+        // Follow the finger downwards; upwards only a little (it expands on release).
+        panel.style.transform = `translateY(${drag.dy > 0 ? drag.dy : Math.max(drag.dy, -40) / 3}px)`;
+      }, { passive: true });
+      const end = () => {
+        if (!drag) return;
+        const { dy, t } = drag; drag = null;
+        const fast = (performance.now() - t) < 300;
+        panel.classList.remove("dragging");
+        panel.style.transform = "";
+        if (dy > 110 || (fast && dy > 40)) { const close = SHEET_CLOSE[panel.id]; if (close) close(); }
+        else if (dy < -40) panel.classList.add("tall");
+        setTimeout(() => delete panel.dataset.dragged, 50);
+      };
+      h.addEventListener("touchend", end, { passive: true });
+      h.addEventListener("touchcancel", end, { passive: true });
+    }
   }
   // Long-press on touch devices = "move my location here" (contextmenu does not fire on iOS).
   let pressTimer = null, pressStart = null;
