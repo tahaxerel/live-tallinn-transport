@@ -1,8 +1,9 @@
 # Tallinn Live
 
-Real-time map of every bus, tram, trolleybus and Elron train in Tallinn and
-around Estonia, built on the public `transport.tallinn.ee/gps.txt` feed and
-Elron's live map feed.
+Real-time map of every bus, tram, trolleybus, Harju county bus and Elron
+train in Tallinn and around Estonia, built on the public
+`transport.tallinn.ee/gps.txt` feed, Põhja-Eesti ÜTK's (IIL) public vehicle
+socket and Elron's live map feed.
 
 **Live:** https://tallinn-live-plum.vercel.app (deploys automatically from `main`)
 **Install on a phone:** https://tallinn-live-plum.vercel.app/install
@@ -27,7 +28,14 @@ upstream request. `vercel.json` sets a 10 s function timeout.
   endpoints (the upstream feed has no CORS):
   - `GET /api/vehicles` → `{ at, vehicles: [{ id, type, line, lat, lon, heading, dest, lowFloor }] }`;
     trains come from `elron.ee/map_data.json` (type `train`, plus `route`,
-    `speed`, `delay`, `lastStop`, `note`) and are merged into the same list
+    `speed`, `delay`, `lastStop`, `note`) and are merged into the same list;
+    Harju county buses (type `county`, plus `dir` IB/OB) come from the Ridango
+    WebSocket behind iil.pilet.ee (`wss://wmb-public-api-peutk.eu-prod.ridango.cloud/ws/tenant/2/vehicle/locations`),
+    which pushes the whole fleet every ~3 s: each refresh connects, takes the
+    first frame and hangs up, cached 4 s. The city feed's speed column is
+    always empty, so the page estimates speed from consecutive fixes and
+    draws every vehicle a few seconds ahead of its fix (dead reckoning,
+    tunable with `?lead=&maxAhead=&roll=&snap=&stopped=`)
   - `GET /api/stops` → Tallinn city platforms (with SIRI ids) from `data/stops.txt`,
     plus the 141 Elron stations from `elron.ee/stops_data.json` (`train: true`)
   - `GET /api/departures?ids=1280,1322` → upcoming departures for one or more

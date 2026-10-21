@@ -26,6 +26,7 @@
     --bus: #5fd6ae;
     --troll: #8cbcff;
     --train: #8fa3c7;
+    --county: #f4b6d6;
     --me: #ffc247;
     --stop: #b7a3e8;
     --ok: #3fbf86;
@@ -347,6 +348,7 @@
   .bus { --c: var(--bus); }
   .troll { --c: var(--troll); }
   .train { --c: var(--train); }
+  .county { --c: var(--county); }
 
   /* ---------- Vehicle markers ---------- */
   .maplibregl-marker { will-change: transform; }
@@ -437,6 +439,7 @@
     <button class="chip tram" data-type="tram"><span class="emo">🚋</span><span data-i18n="tram">Tram</span> <b id="nTram">0</b></button>
     <button class="chip bus" data-type="bus"><span class="emo">🚌</span><span data-i18n="bus">Bus</span> <b id="nBus">0</b></button>
     <button class="chip troll" data-type="troll"><span class="emo">🚎</span><span data-i18n="troll">Trolley</span> <b id="nTroll">0</b></button>
+    <button class="chip county" data-type="county"><span class="emo">🚍</span><span data-i18n="county">Harju</span> <b id="nCounty">0</b></button>
     <button class="chip train" data-type="train"><span class="emo">🚆</span><span data-i18n="train">Train</span> <b id="nTrain">0</b></button>
     <button class="chip fav off" id="favChip"><span class="emo">❤️</span><span data-i18n="favorites">Favorites</span> <b id="nFav">0</b></button>
     <button class="chip stops" id="stopsChip"><span class="emo">🚏</span><span data-i18n="stops">Stops</span></button>
@@ -523,7 +526,7 @@
     en: {
       connecting: "connecting", live: "live", offline: "offline",
       searchPh: "Line or stop · e.g. T4, 8, Risti",
-      tram: "Tram", bus: "Bus", troll: "Trolley", train: "Train", favorites: "Favorites", stops: "Stops", directions: "Directions", installApp: "Install app",
+      tram: "Tram", bus: "Bus", troll: "Trolley", train: "Train", county: "Harju bus", countyLine: "Harju county line {n}", inbound: "towards Tallinn", outbound: "from Tallinn", favorites: "Favorites", stops: "Stops", directions: "Directions", installApp: "Install app",
       stopsToggle: "Stops · tap for departures", shownAgo: "{n} shown · {s}s ago", ago: "{s}s ago",
       chooseStart: "Choose starting point", chooseDest: "Choose destination", leavingNow: "Leaving now", publicTransport: "Public transport",
       dirEmpty: "Pick a destination: tap a stop, search a place, or type above.", whereTo: "Where do you want to go?<br>Type a stop, place or address above.",
@@ -550,7 +553,7 @@
     et: {
       connecting: "ühendan", live: "otse", offline: "ühenduseta",
       searchPh: "Liin või peatus · nt T4, 8, Risti",
-      tram: "Tramm", bus: "Buss", troll: "Troll", train: "Rong", favorites: "Lemmikud", stops: "Peatused", directions: "Teekond", installApp: "Lisa avakuvale",
+      tram: "Tramm", bus: "Buss", troll: "Troll", train: "Rong", county: "Harju buss", countyLine: "Harjumaa liin {n}", inbound: "Tallinna poole", outbound: "Tallinnast välja", favorites: "Lemmikud", stops: "Peatused", directions: "Teekond", installApp: "Lisa avakuvale",
       stopsToggle: "Peatused · puuduta väljumiste nägemiseks", shownAgo: "{n} kuvatud · {s} s tagasi", ago: "{s} s tagasi",
       chooseStart: "Vali alguspunkt", chooseDest: "Vali sihtkoht", leavingNow: "Väljub kohe", publicTransport: "Ühistransport",
       dirEmpty: "Vali sihtkoht: puuduta peatust, otsi kohta või kirjuta ülal.", whereTo: "Kuhu soovid minna?<br>Kirjuta ülal peatus, koht või aadress.",
@@ -592,7 +595,7 @@
     applyLang();
     window.dispatchEvent(new Event("tl:lang"));
   });
-  const EMOJI = { tram: "🚋", bus: "🚌", troll: "🚎", train: "🚆" };
+  const EMOJI = { tram: "🚋", bus: "🚌", troll: "🚎", train: "🚆", county: "🚍" };
   const POLL_MS = 5000; // the feed is rewritten every ~10 s; asking more often only re-reads the same snapshot
   // Dead reckoning: a fix we receive is already LEAD_S seconds old on average (feed cadence + pipeline),
   // so each vehicle is drawn LEAD_S seconds ahead of its fix along its heading at its reported speed,
@@ -622,7 +625,7 @@
   map.on("rotate", () => root.style.setProperty("--mb", map.getBearing().toFixed(1) + "deg"));
   map.on("rotatestart", () => document.body.classList.add("rotating"));
   map.on("rotateend", () => document.body.classList.remove("rotating"));
-  map.addControl(new maplibregl.AttributionControl({ compact: window.matchMedia("(max-width: 719px)").matches, customAttribution: "Data: Tallinna Transport" }), "bottom-right");
+  map.addControl(new maplibregl.AttributionControl({ compact: window.matchMedia("(max-width: 719px)").matches, customAttribution: "Data: Tallinna Transport · Põhja-Eesti ÜTK · Elron" }), "bottom-right");
   // "load" waits for sprites/glyphs too and can hang on flaky mobile networks; the style JSON is enough to add our layers.
   const ready = new Promise((res) => {
     map.once("load", res);
@@ -634,7 +637,7 @@
 
   // ---------- State ----------
   const vehicles = new Map(); // id -> { m, el, shown, from, to, t0, data }
-  const enabled = { tram: true, bus: true, troll: true, train: true };
+  const enabled = { tram: true, bus: true, troll: true, train: true, county: true };
   let lineFilter = new Set();
   let highlightLine = null;
   let lastAt = 0;
@@ -721,8 +724,8 @@
     }
     return `<div class="pop">
       ${badge(d.type, d.line)}
-      <div><div class="dest">→ ${esc(d.dest || "—")} <button class="favline ${isFavLine(d.type, d.line) ? "on" : ""}" data-type="${d.type}" data-line="${esc(d.line)}" title="Favourite line ${esc(d.line)}">${isFavLine(d.type, d.line) ? "♥" : "♡"}</button></div>
-      <div class="sm">${TYPE_LABEL[d.type]} · ${t("vehicle")} ${esc(d.id)}${d.speed != null ? " · " + d.speed + " km/h" : ""}${d.lowFloor ? " · " + t("lowFloor") : ""}</div></div>
+      <div><div class="dest">→ ${esc(d.dest || (d.dir === "IB" ? t("inbound") : d.dir === "OB" ? t("outbound") : "—"))} <button class="favline ${isFavLine(d.type, d.line) ? "on" : ""}" data-type="${d.type}" data-line="${esc(d.line)}" title="Favourite line ${esc(d.line)}">${isFavLine(d.type, d.line) ? "♥" : "♡"}</button></div>
+      <div class="sm">${d.type === "county" ? t("countyLine", { n: esc(d.line) }) + (d.dir === "IB" ? " · " + t("inbound") : d.dir === "OB" ? " · " + t("outbound") : "") : TYPE_LABEL[d.type] + " · " + t("vehicle") + " " + esc(d.id)}${d.speed != null ? " · " + d.speed + " km/h" : ""}${d.lowFloor ? " · " + t("lowFloor") : ""}</div></div>
     </div>`;
   }
 
@@ -736,7 +739,8 @@
   function predict(v, now) {
     if (!v.vel) return v.base;
     const age = Math.min((now - v.baseAt) / 1000, TUNE.roll); // roll on for a few seconds, then wait for the feed
-    const ahead = Math.min(age + TUNE.lead, TUNE.maxAhead / v.vel.mps);
+    const lead = v.data.type === "county" ? TUNE.lead / 2 : TUNE.lead; // the county socket is only ~3 s behind
+    const ahead = Math.min(age + lead, TUNE.maxAhead / v.vel.mps);
     return [v.base[0] + v.vel.dlon * ahead, v.base[1] + v.vel.dlat * ahead];
   }
   const metersBetween = (a, b) => Math.hypot((b[0] - a[0]) * 111320 * Math.cos(a[1] * Math.PI / 180), (b[1] - a[1]) * 111320);
@@ -848,9 +852,9 @@
   requestAnimationFrame(animate);
 
   function refreshCounts(list) {
-    const c = { tram: 0, bus: 0, troll: 0, train: 0 };
+    const c = { tram: 0, bus: 0, troll: 0, train: 0, county: 0 };
     for (const d of list) c[d.type]++;
-    $("#nTram").textContent = c.tram; $("#nBus").textContent = c.bus; $("#nTroll").textContent = c.troll; $("#nTrain").textContent = c.train;
+    $("#nTram").textContent = c.tram; $("#nBus").textContent = c.bus; $("#nTroll").textContent = c.troll; $("#nTrain").textContent = c.train; $("#nCounty").textContent = c.county;
   }
 
   function refilter() {
@@ -1413,7 +1417,7 @@
   const dir = { from: null, to: null, active: null, itins: [], sel: -1, pick: null, seq: 0 };
   const MODE_EMOJI = { bus: "🚌", tram: "🚋", troll: "🚎", train: "🚆", rail: "🚆", ferry: "⛴️", walk: "🚶" };
   const cssVar = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
-  const MODE_COLOR = () => ({ bus: cssVar("--bus"), tram: cssVar("--tram"), troll: cssVar("--troll"), train: cssVar("--train"), rail: cssVar("--train"), ferry: "#7fc8e8" });
+  const MODE_COLOR = () => ({ bus: cssVar("--bus"), tram: cssVar("--tram"), troll: cssVar("--troll"), train: cssVar("--train"), county: cssVar("--county"), rail: cssVar("--train"), ferry: "#7fc8e8" });
   const fmtT = (iso) => new Date(iso).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Tallinn" });
   const fmtDur = (sec) => { const m = Math.round(sec / 60); return m >= 60 ? `${Math.floor(m / 60)} h ${m % 60} min` : `${m} min`; };
   const placeFromMe = () => (me && !manual ? { name: t("yourLocation"), lat: me.lat, lon: me.lon, isMe: true } : null);
