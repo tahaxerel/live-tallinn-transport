@@ -568,7 +568,7 @@
       noStopCalled: "No stop called “{q}”.", nothingFound: "Nothing found for “{q}”.", platforms: "{n} platforms",
       yourLocation: "Your location", chooseOnMap: "Choose on the map", tapMapFor: "Tap the map to set the {what}.", theStart: "start", theDestination: "destination", stop: "stop", pinned: "Pinned location",
       noStartYet: "No start yet. Allow location, or tap the start field and choose a place.", findingRoutes: "Finding routes…", noRoute: "😕 No public transport route found right now.", plannerDown: "Couldn't reach the route planner. Try again in a moment.",
-      leavesNow: "leaves now", leavesIn: "leaves in {n} min", walk: "walk", noTransfers: "no transfers", transfer: "1 transfer", transfers: "{n} transfers",
+      leavesNow: "leaves now", leavesIn: "leaves in {t}", hourShort: "h", walk: "walk", noTransfers: "no transfers", transfer: "1 transfer", transfers: "{n} transfers",
       walkMin: "🚶 Walk {n} min", mTo: "{m} m to {name}", boardAt: "Board at {name}", stopsN: "{n} stop", stopsNp: "{n} stops", getOffAt: "Get off at {name}", arriveAt: "🏁 Arrive at {name}",
       notOnRoad: "⚪ Not on the road yet", noLivePos: "⚪ No live position for this one yet", scheduled: "scheduled {t}",
       liveIs: "Live: {line} is {where} · here in ~{n} min ({t}, {status})", atYourStop: "at your stop now", nextIsYours: "next stop is yours", stopsAway: "{n} stops away",
@@ -597,7 +597,7 @@
       noStopCalled: "Peatust „{q}” ei leitud.", nothingFound: "Otsingule „{q}” ei leitud midagi.", platforms: "{n} platvormi",
       yourLocation: "Minu asukoht", chooseOnMap: "Vali kaardilt", tapMapFor: "Puuduta kaarti, et määrata {what}.", theStart: "alguspunkt", theDestination: "sihtkoht", stop: "peatus", pinned: "Märgitud asukoht",
       noStartYet: "Alguspunkti pole. Luba asukoht või puuduta algusvälja ja vali koht.", findingRoutes: "Otsin teekondi…", noRoute: "😕 Praegu ühistranspordi teekonda ei leitud.", plannerDown: "Reisiplaneerijaga ei saanud ühendust. Proovi hetke pärast uuesti.",
-      leavesNow: "väljub kohe", leavesIn: "väljub {n} min pärast", walk: "jalgsi", noTransfers: "ümberistumisteta", transfer: "1 ümberistumine", transfers: "{n} ümberistumist",
+      leavesNow: "väljub kohe", leavesIn: "väljub {t} pärast", hourShort: "t", walk: "jalgsi", noTransfers: "ümberistumisteta", transfer: "1 ümberistumine", transfers: "{n} ümberistumist",
       walkMin: "🚶 Kõnni {n} min", mTo: "{m} m kuni {name}", boardAt: "Peale peatuses {name}", stopsN: "{n} peatus", stopsNp: "{n} peatust", getOffAt: "Maha peatuses {name}", arriveAt: "🏁 Kohal: {name}",
       notOnRoad: "⚪ Pole veel teel", noLivePos: "⚪ Selle sõiduki asukohta veel pole", scheduled: "graafik {t}",
       liveIs: "Otse: {line} {where} · siin ~{n} min pärast ({t}, {status})", atYourStop: "on praegu sinu peatuses", nextIsYours: "järgmine peatus on sinu oma", stopsAway: "on {n} peatuse kaugusel",
@@ -1485,7 +1485,8 @@
   const cssVar = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
   const MODE_COLOR = () => ({ bus: cssVar("--bus"), tram: cssVar("--tram"), troll: cssVar("--troll"), train: cssVar("--train"), county: cssVar("--county"), rail: cssVar("--train"), ferry: "#7fc8e8" });
   const fmtT = (iso) => new Date(iso).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Tallinn" });
-  const fmtDur = (sec) => { const m = Math.round(sec / 60); return m >= 60 ? `${Math.floor(m / 60)} h ${m % 60} min` : `${m} min`; };
+  // "3 h 56 min" rather than "236 min"; the hour unit is "t" in Estonian.
+  const fmtDur = (sec) => { const m = Math.round(sec / 60); return m >= 60 ? `${Math.floor(m / 60)} ${t("hourShort")} ${m % 60 ? (m % 60) + " min" : ""}`.trim() : `${m} min`; };
   const placeFromMe = () => (me && !manual ? { name: t("yourLocation"), lat: me.lat, lon: me.lon, isMe: true } : null);
   const resolvePt = (which) => dir[which] || (which === "from" ? placeFromMe() : null);
 
@@ -1625,7 +1626,7 @@
     $("#dirList").innerHTML = dir.itins.map((it, i) => {
       const leaveMin = Math.round((new Date(it.startTime) - now) / 60000);
       const firstTransit = it.legs.find((l) => l.mode !== "walk");
-      const leaves = firstTransit ? `<span class="leaves">${leaveMin <= 0 ? t("leavesNow") : t("leavesIn", { n: leaveMin })}</span>` : `<span class="leaves">${t("walk")}</span>`;
+      const leaves = firstTransit ? `<span class="leaves">${leaveMin <= 0 ? t("leavesNow") : t("leavesIn", { t: fmtDur(leaveMin * 60) })}</span>` : `<span class="leaves">${t("walk")}</span>`;
       return `<div class="it" data-i="${i}">
         <div class="chain">${chainHtml(it)}</div>
         <div class="time">${fmtT(it.startTime)} – ${fmtT(it.endTime)}</div>
