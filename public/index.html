@@ -660,11 +660,12 @@
   });
   const EMOJI = { tram: "🚋", bus: "🚌", troll: "🚎", train: "🚆", county: "🚍", tartu: "🚌" };
   const POLL_MS = 5000; // the feed is rewritten every ~10 s; asking more often only re-reads the same snapshot
-  // Dead reckoning: a fix we receive is already LEAD_S seconds old on average (feed cadence + pipeline),
-  // so each vehicle is drawn LEAD_S seconds ahead of its fix along its heading at its reported speed,
-  // and keeps rolling forward until the next fix. Capped so a stalled feed never sends buses off the road.
+  // Dead reckoning: a fix we receive is already `lead` seconds old on average (feed cadence + pipeline),
+  // so each vehicle's target is drawn ahead of its fix along its heading and keeps rolling until the next
+  // fix, slowing smoothly as it nears `maxAhead` so a stalled feed never sends buses off the road. The
+  // marker then chases that target at a bounded speed instead of jumping or pausing.
   // The city feed never fills its speed column, so speed is estimated from consecutive fixes (trains report theirs).
-  const TUNE = { lead: 6, maxAhead: 90, roll: 12, snap: 2500, stopped: 20000, back: 4000 };
+  const TUNE = { lead: 6, maxAhead: 150, snap: 2500, stopped: 20000, back: 4000, catchup: 1.6, creep: 0.4, fps: 25 };
   { const q = new URLSearchParams(location.search); for (const k of Object.keys(TUNE)) if (q.has(k)) TUNE[k] = Number(q.get(k)); }
   const STOP_REFRESH_MS = 15000;
 
@@ -837,9 +838,10 @@
   // Where the vehicle probably is `now`, given its last fix and velocity.
   function predict(v, now) {
     if (!v.vel) return v.base;
-    const age = Math.min((now - v.baseAt) / 1000, TUNE.roll); // roll on for a few seconds, then wait for the feed
     const lead = v.data.type === "county" || v.data.type === "tartu" ? TUNE.lead / 2 : TUNE.lead; // the Ridango sockets are only ~3–5 s behind
-    const ahead = Math.min(age + lead, TUNE.maxAhead / v.vel.mps);
+    const wantM = ((now - v.baseAt) / 1000 + lead) * v.vel.mps;
+    // Soft cap: keeps moving, ever slower, instead of stopping dead at the limit.
+    const ahead = TUNE.maxAhead * (1 - Math.exp(-wantM / TUNE.maxAhead)) / v.vel.mps;
     return [v.base[0] + v.vel.dlon * ahead, v.base[1] + v.vel.dlat * ahead];
   }
   const metersBetween = (a, b) => Math.hypot((b[0] - a[0]) * 111320 * Math.cos(a[1] * Math.PI / 180), (b[1] - a[1]) * 111320);
@@ -854,17 +856,9 @@
     }
     if (d.speed != null) v.mps = d.speed / 3.6; // trains report their speed
     v.vel = velocity(d, v.mps);
-    const target = predict(v, now);
-    v.from = disp; v.t0 = now; v.hold = null;
-    const dist = metersBetween(disp, target);
-    // A fix that lands just behind where we already drew the vehicle is older data catching up:
-    // hold still until the prediction passes the drawn point instead of sliding backwards.
-    if (v.vel) {
-      const along = ((target[0] - disp[0]) * v.vel.dlon + (target[1] - disp[1]) * v.vel.dlat);
-      if (along < 0 && dist < 60) v.hold = disp;
-    }
+    v.from = disp; v.t0 = now; v.drawn = disp; v.lastT = now;
     // Without a usable speed we only have the two fixes: glide between them over the feed interval.
-    v.glide = v.vel ? TUNE.snap : (dist > 30 ? 8000 : TUNE.snap);
+    v.glide = metersBetween(disp, predict(v, now)) > 30 ? 8000 : TUNE.snap;
     v.settled = false;
   }
   function makeVehicle(d) {
@@ -876,8 +870,8 @@
     const m = new maplibregl.Marker({ element: el }).setLngLat([d.lon, d.lat]).setPopup(popup);
     const now = performance.now();
     const mps = d.speed != null ? d.speed / 3.6 : null;
-    const v = { m, el, popup, shown: false, from: [d.lon, d.lat], t0: now, base: [d.lon, d.lat], baseAt: now, mps, vel: velocity(d, mps), hold: null, glide: TUNE.snap, data: d };
-    v.from = predict(v, now); m.setLngLat(v.from);
+    const v = { m, el, popup, shown: false, from: [d.lon, d.lat], t0: now, lastT: now, base: [d.lon, d.lat], baseAt: now, mps, vel: velocity(d, mps), glide: TUNE.snap, data: d };
+    v.from = predict(v, now); v.drawn = v.from; m.setLngLat(v.from);
     el.addEventListener("click", () => { popup.setHTML(popupHtml(v.data)); setHighlight(v.data.line); });
     return v;
   }
@@ -921,7 +915,7 @@
       else if (v.vel && now - v.baseAt > TUNE.stopped) {
         // Two feed cycles without movement: it is standing (at a stop, a light, the depot). Ease back onto its fix.
         const cur = v.m.getLngLat();
-        v.mps = 0; v.vel = null; v.hold = null; v.from = [cur.lng, cur.lat]; v.t0 = now; v.glide = TUNE.back; v.settled = false;
+        v.mps = 0; v.vel = null; v.from = [cur.lng, cur.lat]; v.drawn = v.from; v.t0 = now; v.glide = TUNE.back; v.settled = false;
       }
       if (v.data.heading !== d.heading) v.el.style.setProperty("--h", (d.heading ?? 0) + "deg");
       if ((v.data.label || v.data.line) !== (d.label || d.line)) v.el.querySelector(".pill").textContent = d.label || d.line;
@@ -939,26 +933,46 @@
     updateLiveTracking();
   }
 
+  // Markers chase their target: forward at up to `catchup` × speed when behind it, and still forward at
+  // `creep` × speed when a late fix put the target behind them, so nothing ever stops or slides back.
+  // Throttled to ~25 fps and to the visible map, which is plenty for a bus and kind to phones.
+  let animLast = 0, viewBox = null, viewAt = 0;
   function animate() {
     const now = performance.now();
+    if (now - animLast < 1000 / TUNE.fps) { requestAnimationFrame(animate); return; }
+    animLast = now;
+    if (now - viewAt > 1000) { const b = map.getBounds(); const pad = 0.02; viewBox = [b.getWest() - pad * 2, b.getSouth() - pad, b.getEast() + pad * 2, b.getNorth() + pad]; viewAt = now; }
     for (const v of vehicles.values()) {
       if (!v.shown || v.settled) continue;
-      let target = predict(v, now);
-      if (v.hold) {
-        // Stay put until the prediction has moved past the point we are holding.
-        const along = (target[0] - v.hold[0]) * v.vel.dlon + (target[1] - v.hold[1]) * v.vel.dlat;
-        if (along < 0) { v.m.setLngLat(v.hold); continue; }
-        v.hold = null; v.from = target; v.t0 = now;
-      }
-      const t = (now - v.t0) / v.glide;
-      if (t >= 1) {
-        v.m.setLngLat(target);
-        // A stopped vehicle (or a quiet feed) has nothing left to animate until the next fix.
-        if (!v.vel || now - v.baseAt > TUNE.roll * 1000) v.settled = true;
+      const target = predict(v, now);
+      const dt = Math.min((now - v.lastT) / 1000, 0.5); v.lastT = now;
+      if (!v.vel) {
+        // Standing: glide from where it was drawn onto the fix, then rest.
+        const t = (now - v.t0) / v.glide;
+        if (t >= 1) { v.drawn = target; v.m.setLngLat(target); v.settled = true; continue; }
+        v.drawn = [v.from[0] + (target[0] - v.from[0]) * t, v.from[1] + (target[1] - v.from[1]) * t];
+        v.m.setLngLat(v.drawn);
         continue;
       }
-      // Linear blend from where it was drawn to the moving prediction, so motion never jumps.
-      v.m.setLngLat([v.from[0] + (target[0] - v.from[0]) * t, v.from[1] + (target[1] - v.from[1]) * t]);
+      const onScreen = !viewBox || (v.drawn[0] > viewBox[0] && v.drawn[0] < viewBox[2] && v.drawn[1] > viewBox[1] && v.drawn[1] < viewBox[3]);
+      if (!onScreen) { v.drawn = target; v.m.setLngLat(target); continue; } // off screen: no need to animate, just keep up
+      const cosL = Math.cos(v.drawn[1] * Math.PI / 180);
+      const dx = (target[0] - v.drawn[0]) * 111320 * cosL, dy = (target[1] - v.drawn[1]) * 111320; // metres to target
+      const dist = Math.hypot(dx, dy);
+      const hx = Math.sin(v.data.heading * Math.PI / 180), hy = Math.cos(v.data.heading * Math.PI / 180);
+      const along = dx * hx + dy * hy;
+      let nx, ny, step;
+      if (along >= 0 && dist > 0.2) {
+        // Behind the target: head straight for it, faster the further behind (bounded), never slower than the bus.
+        step = Math.min(v.vel.mps * TUNE.catchup, v.vel.mps + dist / 4) * dt;
+        nx = dx / dist; ny = dy / dist;
+        if (step >= dist) { v.drawn = target; v.m.setLngLat(target); continue; }
+      } else {
+        // Ahead of the target (older data): keep creeping forward along the heading until it catches up.
+        step = v.vel.mps * TUNE.creep * dt; nx = hx; ny = hy;
+      }
+      v.drawn = [v.drawn[0] + nx * step / (111320 * cosL), v.drawn[1] + ny * step / 111320];
+      v.m.setLngLat(v.drawn);
     }
     requestAnimationFrame(animate);
   }
