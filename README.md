@@ -32,7 +32,10 @@ upstream request. `vercel.json` sets a 10 s function timeout.
     Harju county buses (type `county`, plus `dir` IB/OB) come from the Ridango
     WebSocket behind iil.pilet.ee (`wss://wmb-public-api-peutk.eu-prod.ridango.cloud/ws/tenant/2/vehicle/locations`),
     which pushes the whole fleet every ~3 s: each refresh connects, takes the
-    first frame and hangs up, cached 4 s. The city feed's speed column is
+    first frame and hangs up, cached 4 s. Tartu city buses (type `tartu`) come
+    the same way from `wss://api.ridango.com/rt-ws/vehicle-status` after a
+    `{regionId: 32, …}` subscribe message (region ids are in each pilet.ee
+    app's `assets/settings/settings.json`). The city feed's speed column is
     always empty, so the page estimates speed from consecutive fixes and
     draws every vehicle a few seconds ahead of its fix (dead reckoning,
     tunable with `?lead=&maxAhead=&roll=&snap=&stopped=`)
