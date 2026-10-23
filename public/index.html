@@ -234,7 +234,8 @@
     #side > .panel.dragging { transition: none; }
     /* iOS zooms into any field under 16px; keep phones at 16px and desktops compact. */
     #top .search input, .fields input { font-size: 16px; }
-    #near.on, #stop.on, #routes.on { max-height: 52vh; }
+    #stop.on, #routes.on { max-height: 52vh; }
+    #near.on { max-height: 44vh; }
     #near.on.tall, #stop.on.tall, #routes.on.tall { max-height: 90vh; }
     body.routes-open #near, body.routes-open #nearBtn { display: none !important; }
     .grab { display: block; width: 40px; height: 5px; border-radius: 3px; background: var(--knob); margin: 8px auto 0; flex: none; }
@@ -1048,6 +1049,15 @@
 
   // ---------- Mobile: search toggle, stops chip, sheet expand ----------
   const isMobile = () => window.matchMedia("(max-width: 719px)").matches;
+  // On phones a bottom sheet hides the lower half of the map, so the map's padding follows the sheet:
+  // whatever is "centred" (your dot, the stop you tapped) stays in the visible part above it.
+  const sheetPad = () => { if (!isMobile()) return 0; const p = document.querySelector("#side > .panel.on, #dir.on"); return p ? Math.min(p.getBoundingClientRect().height, innerHeight * 0.62) : 0; };
+  let fitTimer = null;
+  function fitSheet(duration = 350) {
+    clearTimeout(fitTimer);
+    // Sheets animate their height for 250 ms; measure once they have settled.
+    fitTimer = setTimeout(() => { const b = sheetPad(); if (Math.abs((map.getPadding().bottom || 0) - b) > 4) map.easeTo({ padding: { top: 0, bottom: b, left: 0, right: 0 }, duration }); }, 280);
+  }
   $("#searchBtn").addEventListener("click", () => {
     const open = $("#top").classList.toggle("search-open");
     $("#searchBtn").classList.toggle("on", open);
@@ -1073,7 +1083,7 @@
     let drag = null;
     $(sel).addEventListener("click", (e) => {
       if (e.target.closest("button") || panel.dataset.dragged) return;
-      if (isMobile()) panel.classList.toggle("tall");
+      if (isMobile()) { panel.classList.toggle("tall"); fitSheet(); }
     });
     for (const h of [$(sel), panel.querySelector(".grab")]) {
       if (!h) continue;
@@ -1097,7 +1107,7 @@
         panel.classList.remove("dragging");
         panel.style.transform = "";
         if (dy > 110 || (fast && dy > 40)) { const close = SHEET_CLOSE[panel.id]; if (close) close(); }
-        else if (dy < -40) panel.classList.add("tall");
+        else if (dy < -40) { panel.classList.add("tall"); fitSheet(); }
         setTimeout(() => delete panel.dataset.dragged, 50);
       };
       h.addEventListener("touchend", end, { passive: true });
@@ -1452,7 +1462,7 @@
       $("#stopName").textContent = s.name; $("#stopUpdated").textContent = "";
       $("#stopTabs").className = "tabs"; $("#stopTabs").innerHTML = "";
       $("#stopList").innerHTML = `<div class="empty">${t("loadingTrains")}</div>`;
-      $("#stop").classList.add("on"); document.body.classList.add("stop-open");
+      $("#stop").classList.add("on"); document.body.classList.add("stop-open"); fitSheet();
       map.getSource("stop-sel").setData({ type: "FeatureCollection", features: [{ type: "Feature", properties: { label: "" }, geometry: { type: "Point", coordinates: [s.lon, s.lat] } }] });
       syncStopFav();
       refreshStop();
@@ -1467,7 +1477,7 @@
     $("#stopName").textContent = s.name;
     $("#stopUpdated").textContent = "";
     $("#stopList").innerHTML = `<div class="empty">${t("loadingDepartures")}</div>`;
-    $("#stop").classList.add("on"); document.body.classList.add("stop-open");
+    $("#stop").classList.add("on"); document.body.classList.add("stop-open"); fitSheet();
     map.getSource("stop-sel").setData(stopSelData());
     syncStopFav();
     clearInterval(stopTimer);
@@ -1476,7 +1486,7 @@
   }
   function closeStop() {
     curStop = null; lastStopData = null; clearInterval(stopTimer);
-    $("#stop").classList.remove("on"); document.body.classList.remove("stop-open");
+    $("#stop").classList.remove("on", "tall"); document.body.classList.remove("stop-open"); fitSheet();
     if (map.getSource("stop-sel")) map.getSource("stop-sel").setData({ type: "FeatureCollection", features: [] });
   }
   $("#stopClose").addEventListener("click", closeStop);
@@ -1626,12 +1636,12 @@
     syncDirFields();
     closeStop();
     $("#results").className = "results"; $("#results").innerHTML = "";
-    $("#dir").classList.add("on"); document.body.classList.add("dir-open");
+    $("#dir").classList.add("on"); document.body.classList.add("dir-open"); fitSheet();
     if (!dir.to) { $("#dirList").innerHTML = `<div class="empty">${t("whereTo")}</div>`; setTimeout(() => $("#dirTo").focus(), 50); }
     planNow();
   }
   function closeDirections() {
-    $("#dir").classList.remove("on"); document.body.classList.remove("dir-open");
+    $("#dir").classList.remove("on", "tall"); document.body.classList.remove("dir-open"); fitSheet();
     hideSugg(); dir.pick = null;
     clearRoute();
   }
@@ -1830,13 +1840,13 @@
   let routesTimer = null, routesRetry = null, routesSeq = 0;
   function openRoutes() {
     closeStop(); closeNear();
-    $("#routes").classList.add("on"); document.body.classList.add("routes-open");
+    $("#routes").classList.add("on"); document.body.classList.add("routes-open"); fitSheet();
     if (isMobile()) closeSearch();
     renderRoutes();
     clearInterval(routesTimer); routesTimer = setInterval(renderRoutes, 30000);
   }
   function closeRoutes() {
-    $("#routes").classList.remove("on"); document.body.classList.remove("routes-open");
+    $("#routes").classList.remove("on", "tall"); document.body.classList.remove("routes-open"); fitSheet();
     clearInterval(routesTimer); routesTimer = null;
   }
   $("#routesChip").addEventListener("click", () => { if ($("#routes").classList.contains("on")) closeRoutes(); else openRoutes(); });
@@ -2169,15 +2179,16 @@
     for (const id of ["me-fill", "me-line"]) if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", on);
   }
   function openNear(fly) {
-    $("#near").classList.add("on"); $("#nearBtn").classList.add("on");
+    $("#near").classList.add("on"); $("#nearBtn").classList.add("on"); $("#near").classList.remove("tall");
     syncRadiusRing();
-    if (fly && me) map.flyTo({ center: [me.lon, me.lat], zoom: Math.max(map.getZoom(), 16), duration: 800 });
+    if (fly && me) map.flyTo({ center: [me.lon, me.lat], zoom: Math.max(map.getZoom(), 16), duration: 800, padding: { top: 0, bottom: sheetPad(), left: 0, right: 0 } });
+    else fitSheet();
     renderNear();
   }
   // Closing the list keeps the location dot and keeps following; it just hides the list.
   function closeNear() {
-    $("#near").classList.remove("on"); $("#nearBtn").classList.remove("on");
-    syncRadiusRing();
+    $("#near").classList.remove("on", "tall"); $("#nearBtn").classList.remove("on");
+    syncRadiusRing(); fitSheet();
     if (manual) { // a hand-placed pin has no reason to stay
       manual = false;
       if (meMarker) {
