@@ -24,7 +24,7 @@ upstream request. `vercel.json` sets a 10 s function timeout.
 
 ## What's inside
 
-- `server.js` — zero-dependency Node server. Serves `public/` and proxies two
+- `dev/server.js` — zero-dependency local dev server (`npm run dev`; kept out of the root so Vercel does not deploy it as a catch-all Node server). Serves `public/` and proxies two
   endpoints (the upstream feed has no CORS):
   - `GET /api/vehicles` → `{ at, vehicles: [{ id, type, line, lat, lon, heading, dest, lowFloor }] }`;
     trains come from `elron.ee/map_data.json` (type `train`, plus `route`,

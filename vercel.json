@@ -26,5 +26,8 @@
       ]
     }
   ],
-  "cleanUrls": true
+  "cleanUrls": true,
+  "regions": [
+    "arn1"
+  ]
 }

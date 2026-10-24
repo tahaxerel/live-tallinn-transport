@@ -4,7 +4,7 @@
   "private": true,
   "description": "Every bus, tram and trolley in Tallinn, live.",
   "scripts": {
-    "start": "node server.js"
+    "dev": "node dev/server.js"
   },
   "engines": {
     "node": "22.x"
