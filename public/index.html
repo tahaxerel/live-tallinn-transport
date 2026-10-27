@@ -260,7 +260,7 @@
   @media (min-width: 720px) { #near.on, #stop.on { max-height: 100%; flex: 0 1 auto; } }
   @media (max-width: 719px) {
     #side { left: 0; right: 0; bottom: 0; max-height: 100vh; gap: 0; }
-    #nearBtn { margin: 0 12px calc(34px + env(safe-area-inset-bottom)) 0; }
+    .fabs { margin: 0 12px calc(34px + env(safe-area-inset-bottom)) 0; }
     .maplibregl-ctrl-attrib.maplibregl-compact { border-radius: 999px; margin: 0 6px 6px 0 !important; }
     #side > .panel { border-radius: 24px 24px 0 0; border-bottom: none; padding-bottom: env(safe-area-inset-bottom); transition: max-height .25s ease, transform .22s ease; }
     #side > .panel.dragging { transition: none; }
@@ -291,6 +291,39 @@
   #nearBtn:active { transform: translateY(0); }
   #nearBtn .emo { font-size: 18px; line-height: 1; }
   #nearBtn.on { display: none; }
+
+  /* ---------- Traffic cameras (experimental) ---------- */
+  .fabs { display: flex; align-items: center; justify-content: flex-end; gap: 10px; pointer-events: none; flex: none; }
+  #camBtn {
+    display: inline-flex; align-items: center; gap: 7px; pointer-events: auto;
+    padding: 12px 15px 12px 13px; border-radius: 999px; border: none;
+    background: var(--surface); color: var(--text); font: inherit; font-weight: 900; font-size: 14px; cursor: pointer;
+    box-shadow: 0 8px 22px rgba(30,25,40,0.18); transition: transform .12s; flex: none;
+  }
+  #camBtn:hover { transform: translateY(-2px); }
+  #camBtn .emo { font-size: 18px; line-height: 1; }
+  body.cams-on #camBtn { background: #2b2734; color: #fff; }
+  body.cams-on #nearBtn, body.cams-on .veh, body.cams-on #near { display: none !important; }
+  body.cams-on #top .chips, body.cams-on #top .row, body.cams-on #favs, body.cams-on #top .results { display: none !important; }
+  .camhint { display: none; font-size: 12px; font-weight: 800; color: var(--muted); }
+  body.cams-on .camhint { display: block; }
+  @media (min-width: 720px) { #cam.on { max-height: 100%; flex: 0 1 auto; } }
+  @media (max-width: 719px) {
+    #camBtn .lbl { display: none; }
+    #camBtn { padding: 12px 13px; }
+    body.cams-on #camBtn .lbl { display: inline; }
+    /* A sheet owns the bottom of the screen: the buttons step aside while one is open. */
+    body.stop-open .fabs, body.routes-open .fabs, body.dir-open .fabs, body.cam-open .fabs, .fabs:has(#nearBtn.on) { display: none !important; }
+    #cam.on { max-height: 62vh; }
+    #cam.on.tall { max-height: 90vh; }
+  }
+  .camwrap { padding: 10px 12px 12px; }
+  .camshot { display: block; position: relative; border-radius: 14px; overflow: hidden; background: #1d1a22; aspect-ratio: 16 / 9; }
+  .camshot img { display: block; width: 100%; height: 100%; object-fit: cover; }
+  .camshot .camerr { position: absolute; inset: auto 8px 8px 8px; font-size: 12px; font-weight: 800; color: #fff; text-shadow: 0 1px 3px #000; display: none; }
+  .camshot.err .camerr { display: block; }
+  .camnote { margin-top: 8px; font-size: 11px; color: var(--muted); line-height: 1.4; }
+  .camnote b { color: #c2512a; }
 
   .panel header { padding: 14px 16px 12px; display: flex; align-items: center; justify-content: space-between; gap: 8px; border-bottom: 1px solid var(--panel-border); flex: none; }
   .panel header h2 { margin: 0; font-size: 16px; font-weight: 900; letter-spacing: -0.01em; display: flex; align-items: center; gap: 8px; min-width: 0; }
@@ -529,6 +562,7 @@
     <button class="chip" id="dirChip" style="--c: rgba(183,163,232,0.6)"><span class="emo">🧭</span><span data-i18n="directions">Directions</span></button>
     <a class="chip install" id="installChip" href="/install"><span class="emo">📲</span><span data-i18n="installApp">Install app</span></a>
   </div>
+  <div class="camhint" id="camHint"></div>
   <div class="row">
     <label class="toggle"><input type="checkbox" id="stopsToggle" checked> 🚏 <span data-i18n="stopsToggle">Stops · tap for departures</span></label>
     <span class="sub" id="updated">—</span>
@@ -589,10 +623,26 @@
     <div class="hint" data-i18n="longPressHint">Long-press (or right-click) the map to move your location.</div>
   </aside>
 
-  <button id="nearBtn" title="Show vehicles passing near you">
-    <span class="emo">📍</span>
-    <span data-i18n="nearMe">Near me</span>
-  </button>
+  <aside id="cam" class="panel">
+    <div class="grab"></div>
+    <header>
+      <h2><span class="emo">📷</span><span id="camName">Camera</span></h2>
+      <div class="right"><span class="sub" id="camAge"></span><button class="iconbtn" id="camClose" title="Close">✕</button></div>
+    </header>
+    <div class="tabs" id="camTabs"></div>
+    <div class="list camwrap">
+      <a class="camshot" id="camLink" target="_blank" rel="noopener" data-i18n-title="camOpen"><img id="camImg" alt=""><span class="camerr" id="camErr"></span></a>
+      <div class="camnote" id="camNote"></div>
+    </div>
+  </aside>
+
+  <div class="fabs">
+    <button id="camBtn" data-i18n-title="cameras" title="Cameras"><span class="emo">📷</span><span class="lbl" data-i18n="cameras">Cameras</span></button>
+    <button id="nearBtn" title="Show vehicles passing near you">
+      <span class="emo">📍</span>
+      <span data-i18n="nearMe">Near me</span>
+    </button>
+  </div>
 </div>
 
 <div class="onb" id="onb">
@@ -643,6 +693,8 @@
       elronStation: "🚆 Elron train station", swap: "Swap start and destination",
       myRoutes: "My routes", saveRoute: "Save this route", routeName: "Name this route (e.g. Home → Work)", routeSaved: "Saved to My routes", routeExists: "Already in My routes",
       noRoutes: "No saved routes yet.<br>Plan a trip in Directions and tap ♡ to keep it here, with its next departures.", openDirections: "🧭 Plan a trip", flip: "Flip direction", noDeps: "No departures found right now.", nowDep: "now", checking: "Checking…", fromMeNoSave: "Choose a destination first.", waitingLocation: "📍 Waiting for your location…",
+      cameras: "Cameras", camsClose: "Close cameras", camHint: "{n} traffic cameras · tap a dot", camLive: "live · {s}s ago", camLoading: "loading…", camFailed: "Camera not responding, retrying…",
+      camApprox: "Approximate location", camCredit: "Images: Tallinn Mobility Department (ristmikud.tallinn.ee)", camView: "View", camOpen: "Open full size",
     },
     et: {
       connecting: "ühendan", live: "otse", offline: "ühenduseta",
@@ -672,6 +724,8 @@
       elronStation: "🚆 Elroni raudteejaam", swap: "Vaheta algus ja sihtkoht",
       myRoutes: "Minu teekonnad", saveRoute: "Salvesta see teekond", routeName: "Pane teekonnale nimi (nt Koju → Tööle)", routeSaved: "Salvestatud Minu teekondadesse", routeExists: "On juba Minu teekondades",
       noRoutes: "Salvestatud teekondi veel pole.<br>Planeeri teekond ja puuduta ♡, siis näed siin selle järgmisi väljumisi.", openDirections: "🧭 Planeeri teekond", flip: "Pööra suund", noDeps: "Praegu väljumisi ei leitud.", nowDep: "nüüd", checking: "Vaatan…", fromMeNoSave: "Vali kõigepealt sihtkoht.", waitingLocation: "📍 Ootan sinu asukohta…",
+      cameras: "Kaamerad", camsClose: "Sulge kaamerad", camHint: "{n} liikluskaamerat · puuduta täppi", camLive: "otse · {s} s tagasi", camLoading: "laen…", camFailed: "Kaamera ei vasta, proovin uuesti…",
+      camApprox: "Asukoht on ligikaudne", camCredit: "Pildid: Tallinna Liikuvusamet (ristmikud.tallinn.ee)", camView: "Vaade", camOpen: "Ava täissuuruses",
     },
   };
   let lang = (() => { try { const v = localStorage.getItem("tl.lang"); if (v === "et" || v === "en") return v; } catch {} return /^et/i.test(navigator.language || "") ? "et" : "en"; })();
@@ -735,7 +789,7 @@
   window.tallinnLive = { map }; // handy for debugging in devtools
 
   // ---------- Theme ----------
-  const OWN_SOURCES = new Set(["stops", "stop-sel", "balti-tracks", "fav-stops", "route", "route-pts", "me-acc", "me-circle"]);
+  const OWN_SOURCES = new Set(["stops", "stop-sel", "balti-tracks", "fav-stops", "route", "route-pts", "me-acc", "me-circle", "cams", "cam-sel"]);
   const themeOf = () => document.documentElement.dataset.theme === "dark" ? "dark" : "light";
   function applyMapTheme() {
     const paper = cssVar("--paper"), surface = cssVar("--surface");
@@ -777,6 +831,7 @@
   let radiusM = 600;
   let shownCount = 0;
   let stops = []; // [{id, siri, name, lat, lon}]
+  let camMode = false; // traffic-camera mode: the map shows only the city's junction cameras
 
   // ---------- Favourites (stops + lines), persisted per browser ----------
   const favs = { stops: [], lines: [] }; // stops: [{key,name,lat,lon,train}], lines: ["bus:8", "tram:T4"]
@@ -975,6 +1030,7 @@
     const now = performance.now();
     if (now - animLast < 1000 / TUNE.fps) { requestAnimationFrame(animate); return; }
     animLast = now;
+    if (camMode) { requestAnimationFrame(animate); return; } // markers are hidden in camera mode
     if (now - viewAt > 1000) { const b = map.getBounds(); const pad = 0.02; viewBox = [b.getWest() - pad * 2, b.getSouth() - pad, b.getEast() + pad * 2, b.getNorth() + pad]; viewAt = now; }
     for (const v of vehicles.values()) {
       if (!v.shown || v.settled) continue;
@@ -1055,6 +1111,7 @@
   // ---------- Polling ----------
   let failures = 0;
   async function poll() {
+    if (camMode) { setTimeout(poll, POLL_MS); return; } // nothing to show, nothing to fetch
     try {
       const r = await fetch("/api/vehicles", { cache: "no-store" });
       if (!r.ok) throw new Error(r.status);
@@ -1110,8 +1167,8 @@
   $("#stopsToggle").addEventListener("change", syncStopsChip);
   syncStopsChip();
   // Bottom sheets on phones: tap the header to expand, drag the handle/header down to close, up to expand.
-  const SHEET_CLOSE = { stop: () => closeStop(), near: () => closeNear(), dir: () => closeDirections(), routes: () => closeRoutes() };
-  for (const sel of ["#stop header", "#near header", "#dir header", "#routes header"]) {
+  const SHEET_CLOSE = { stop: () => closeStop(), near: () => closeNear(), dir: () => closeDirections(), routes: () => closeRoutes(), cam: () => closeCam() };
+  for (const sel of ["#stop header", "#near header", "#dir header", "#routes header", "#cam header"]) {
     const panel = $(sel).closest(".panel");
     let drag = null;
     $(sel).addEventListener("click", (e) => {
@@ -1154,6 +1211,7 @@
     if (e.touches.length !== 1) return;
     const t = e.touches[0]; pressStart = [t.clientX, t.clientY];
     pressTimer = setTimeout(() => {
+      if (camMode) return;
       const rect = canvas.getBoundingClientRect();
       const ll = map.unproject([pressStart[0] - rect.left, pressStart[1] - rect.top]);
       if (navigator.vibrate) navigator.vibrate(15);
@@ -1245,9 +1303,150 @@
   }
   loadStops();
   function setStopsVisible(on) {
-    for (const id of ["stops", "stations", "stops-hit"]) if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", on ? "visible" : "none");
+    for (const id of ["stops", "stations", "stops-hit"]) if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", on && !camMode ? "visible" : "none");
   }
   $("#stopsToggle").addEventListener("change", (e) => setStopsVisible(e.target.checked));
+
+  // ---------- Traffic cameras (experimental) ----------
+  // The city's junction cameras (ristmikud.tallinn.ee) as a map mode of their own: the camera button swaps
+  // vehicles and stops for one dot per junction, and tapping a dot streams that junction's views.
+  // Positions live in /cameras.json: OSM junction geometry, a few placed by hand and flagged approximate.
+  const CAM_REFRESH_MS = 2000; // the server renders a fresh frame per request; 2 s keeps mobile data sane
+  const CAM_HIDE = ["stops", "stations", "stops-hit", "stop-sel", "stop-sel-label", "balti-tracks", "fav-stops", "fav-stops-star", "route-casing", "route-line", "route-walk", "route-pts"];
+  const CAM_EMPTY = { type: "FeatureCollection", features: [] };
+  let camData = null, camSite = null, camView = 0, camTimer = null, camShownAt = 0, camErrors = 0;
+  const camHidden = new Map();
+  const camLabel = (s) => (s ? s.replace(/,?\s*\bsuund\s+/gi, " → ").replace(/^\s*→/, "→").trim() : t("camView"));
+  // A round dark badge with a white camera, drawn once (emoji fonts differ per phone).
+  function camIcon() {
+    const W = 64, c = document.createElement("canvas"); c.width = c.height = W;
+    const g = c.getContext("2d");
+    g.fillStyle = "#2b2734"; g.strokeStyle = "#fff"; g.lineWidth = 5;
+    g.beginPath(); g.arc(W / 2, W / 2, W / 2 - 4, 0, Math.PI * 2); g.fill(); g.stroke();
+    g.fillStyle = "#fff";
+    g.beginPath(); g.roundRect(17, 23, 30, 21, 4); g.fill();
+    g.beginPath(); g.roundRect(25, 19, 12, 6, 2); g.fill();
+    g.fillStyle = "#2b2734"; g.beginPath(); g.arc(32, 33.5, 6.5, 0, Math.PI * 2); g.fill();
+    g.fillStyle = "#fff"; g.beginPath(); g.arc(32, 33.5, 3.5, 0, Math.PI * 2); g.fill();
+    return { width: W, height: W, data: g.getImageData(0, 0, W, W).data };
+  }
+  const addCamIcon = () => { if (!map.hasImage("cam-ico")) map.addImage("cam-ico", camIcon(), { pixelRatio: 2 }); };
+  map.on("styleimagemissing", (e) => { if (e.id === "cam-ico") addCamIcon(); }); // the basemap swap drops our images
+  async function ensureCamLayers() {
+    await ready;
+    addCamIcon();
+    if (map.getSource("cams")) return;
+    map.addSource("cams", { type: "geojson", data: { type: "FeatureCollection", features: camData.sites.map((s, i) => ({ type: "Feature", properties: { i, n: s.cams.length, name: s.name }, geometry: { type: "Point", coordinates: [s.lon, s.lat] } })) } });
+    map.addSource("cam-sel", { type: "geojson", data: CAM_EMPTY });
+    map.addLayer({ id: "cam-sel", type: "circle", source: "cam-sel", paint: { "circle-radius": 21, "circle-color": "#ff6b6b", "circle-opacity": 0.22, "circle-stroke-color": "#ff6b6b", "circle-stroke-width": 2.5 } });
+    map.addLayer({
+      id: "cams", type: "symbol", source: "cams",
+      layout: {
+        "icon-image": "cam-ico", "icon-size": ["interpolate", ["linear"], ["zoom"], 10, 0.5, 13, 0.75, 16, 1], "icon-allow-overlap": true, "icon-ignore-placement": true,
+        // How many views a junction has, as a small badge on the dot's shoulder.
+        "text-field": ["case", [">", ["get", "n"], 1], ["to-string", ["get", "n"]], ""], "text-font": ["Noto Sans Bold"],
+        "text-size": ["interpolate", ["linear"], ["zoom"], 10, 8, 16, 11], "text-offset": [1.1, -1.1], "text-allow-overlap": true, "text-ignore-placement": true,
+      },
+      paint: { "text-color": "#fff", "text-halo-color": "#ff6b6b", "text-halo-width": 2.5 },
+    });
+    map.on("click", "cams", (ev) => openCam(ev.features[0].properties.i));
+    map.on("mouseenter", "cams", (ev) => { map.getCanvas().style.cursor = "pointer"; stopPopup.setLngLat(ev.features[0].geometry.coordinates).setText("📷 " + ev.features[0].properties.name).addTo(map); });
+    map.on("mouseleave", "cams", () => { map.getCanvas().style.cursor = ""; stopPopup.remove(); });
+  }
+  function syncCamBtn() {
+    $("#camBtn .emo").textContent = camMode ? "✕" : "📷";
+    $("#camBtn .lbl").textContent = t(camMode ? "camsClose" : "cameras");
+    $("#camBtn").title = t(camMode ? "camsClose" : "cameras");
+  }
+  window.addEventListener("tl:lang", () => { syncCamBtn(); if (camData) $("#camHint").textContent = "📷 " + t("camHint", { n: camData.sites.reduce((n, s) => n + s.cams.length, 0) }); if (camSite) openCam(camData.sites.indexOf(camSite), camView, false); });
+  async function setCamMode(on) {
+    if (on === camMode) return;
+    if (on && !camData) {
+      try { camData = await (await fetch("/cameras.json")).json(); } catch { return; }
+    }
+    camMode = on;
+    document.body.classList.toggle("cams-on", on);
+    syncCamBtn();
+    stopPopup.remove();
+    for (const v of vehicles.values()) v.popup.remove();
+    if (on) {
+      for (const [sel, close] of [["#stop", closeStop], ["#near", closeNear], ["#routes", closeRoutes], ["#dir", closeDirections]]) if ($(sel).classList.contains("on")) close();
+      for (const id of CAM_HIDE) if (map.getLayer(id)) { camHidden.set(id, map.getLayoutProperty(id, "visibility") || "visible"); map.setLayoutProperty(id, "visibility", "none"); }
+      $("#camHint").textContent = "📷 " + t("camHint", { n: camData.sites.reduce((n, s) => n + s.cams.length, 0) });
+      await ensureCamLayers();
+      for (const id of ["cams", "cam-sel"]) map.setLayoutProperty(id, "visibility", "visible");
+      if (map.getZoom() < 11.5) map.easeTo({ center: [24.745, 59.425], zoom: 12 });
+    } else {
+      closeCam();
+      for (const id of ["cams", "cam-sel"]) if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", "none");
+      for (const [id, vis] of camHidden) if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", vis);
+      camHidden.clear();
+      setStopsVisible($("#stopsToggle").checked);
+    }
+  }
+  function openCam(i, view = 0, fly = true) {
+    const s = camData.sites[i];
+    if (!s) return;
+    camSite = s; camView = Math.min(view, s.cams.length - 1); camErrors = 0;
+    $("#camName").textContent = s.name;
+    const tabs = $("#camTabs");
+    tabs.innerHTML = s.cams.length > 1 ? s.cams.map((c, k) => `<button class="dirbtn ${k === camView ? "on" : ""}" data-k="${k}"><b>${k + 1}</b><span>${esc(camLabel(c.label))}</span></button>`).join("") : "";
+    tabs.classList.toggle("on", s.cams.length > 1);
+    const one = s.cams.length === 1 && s.cams[0].label ? esc(camLabel(s.cams[0].label)) + "<br>" : "";
+    $("#camNote").innerHTML = one + (s.approx ? `<b>⚠️ ${esc(t("camApprox"))}</b><br>` : "") + esc(t("camCredit"));
+    map.getSource("cam-sel")?.setData({ type: "FeatureCollection", features: [{ type: "Feature", properties: {}, geometry: { type: "Point", coordinates: [s.lon, s.lat] } }] });
+    $("#cam").classList.add("on"); document.body.classList.add("cam-open");
+    if (fly) map.flyTo({ center: [s.lon, s.lat], zoom: Math.max(map.getZoom(), 14.5), duration: 700, padding: { top: 0, bottom: sheetPad(), left: 0, right: 0 } });
+    else fitSheet();
+    loadFrame(true);
+  }
+  $("#camTabs").addEventListener("click", (e) => {
+    const b = e.target.closest(".dirbtn"); if (!b || !camSite) return;
+    camView = +b.dataset.k; camErrors = 0;
+    $("#camTabs").querySelectorAll(".dirbtn").forEach((x) => x.classList.toggle("on", x === b));
+    loadFrame(true);
+  });
+  // Preload each frame off-screen and swap it in when complete, so the picture never flashes blank.
+  function loadFrame(first) {
+    clearTimeout(camTimer);
+    if (!camSite || !camMode) return;
+    const site = camSite, view = camView, id = site.cams[view].id;
+    const next = (ms) => { camTimer = setTimeout(() => loadFrame(false), ms); };
+    if (first) {
+      $("#camImg").removeAttribute("src"); camShownAt = 0;
+      $("#camAge").textContent = t("camLoading"); $("#camLink").classList.remove("err");
+      $("#camLink").href = camData.img.replace("{id}", id);
+    }
+    if (document.hidden) return next(1000); // background tab: don't spend the user's data
+    const url = camData.img.replace("{id}", id) + "?t=" + Date.now();
+    const img = new Image();
+    img.onload = () => {
+      if (camSite !== site || camView !== view) return;
+      $("#camImg").src = url; camShownAt = Date.now(); camErrors = 0;
+      $("#camLink").classList.remove("err");
+      next(CAM_REFRESH_MS);
+    };
+    img.onerror = () => {
+      if (camSite !== site || camView !== view) return;
+      camErrors++;
+      $("#camErr").textContent = t("camFailed"); $("#camLink").classList.add("err");
+      next(Math.min(15000, CAM_REFRESH_MS * 2 ** camErrors));
+    };
+    img.src = url;
+  }
+  setInterval(() => { if (camSite && camShownAt) $("#camAge").textContent = t("camLive", { s: Math.round((Date.now() - camShownAt) / 1000) }); }, 1000);
+  function closeCam() {
+    clearTimeout(camTimer); camSite = null;
+    if (!$("#cam").classList.contains("on")) return;
+    $("#cam").classList.remove("on", "tall"); document.body.classList.remove("cam-open");
+    map.getSource("cam-sel")?.setData(CAM_EMPTY);
+    $("#camImg").removeAttribute("src");
+    fitSheet();
+  }
+  $("#camClose").addEventListener("click", closeCam);
+  $("#camBtn").addEventListener("click", () => setCamMode(!camMode));
+  document.addEventListener("keydown", (e) => { if (e.key !== "Escape" || !camMode) return; if (camSite) closeCam(); else setCamMode(false); });
+  syncCamBtn();
 
   // ---------- Favourites UI ----------
   function favStopsData() {
