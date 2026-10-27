@@ -28,8 +28,13 @@
       for (var i = 0; i < localStorage.length; i++) { var k = localStorage.key(i); if (k && k.indexOf("tl.") === 0 && k.indexOf("tl.board.") !== 0) { data[k] = localStorage.getItem(k); n++; } }
       if (n) payload = "#import=" + encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify(data)))));
     } catch (e) {}
+    // Keep the visit's real source in Analytics: after the hop the referrer would read "vercel.app",
+    // so the original one (reddit.com, facebook.com…) rides along as utm_source.
+    var search = location.search, ref = "";
+    try { ref = document.referrer ? new URL(document.referrer).hostname.replace(/^www\./, "") : ""; } catch (e) {}
+    if (ref && OLD.indexOf(ref) < 0 && NEW.indexOf("//" + ref) < 0 && !/[?&]utm_source=/.test(search)) search += (search ? "&" : "?") + "utm_source=" + encodeURIComponent(ref);
     window.__tlMoving = true; // the app scripts below check this and stay idle: no map, no polling, no location prompt here
-    location.replace(NEW + location.pathname + location.search + payload);
+    location.replace(NEW + location.pathname + search + payload);
     return;
   }
   try {
