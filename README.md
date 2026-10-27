@@ -5,8 +5,8 @@ train in Tallinn and around Estonia, built on the public
 `transport.tallinn.ee/gps.txt` feed, Põhja-Eesti ÜTK's (IIL) public vehicle
 socket and Elron's live map feed.
 
-**Live:** https://tallinn-live-plum.vercel.app (deploys automatically from `main`)
-**Install on a phone:** https://tallinn-live-plum.vercel.app/install
+**Live:** https://eestitransport.app (deploys automatically from `main`; the old https://tallinn-live-plum.vercel.app forwards there and carries favourites/settings along)
+**Install on a phone:** https://eestitransport.app/install
 
 ## Run
 
