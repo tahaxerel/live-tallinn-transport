@@ -5,7 +5,7 @@
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
-const { getVehicles, getStops, getDepartures, plan, geocode, trip, station, weather, vehicleRoute, alerts } = require("../lib/transit");
+const { getVehicles, getStops, getDepartures, plan, geocode, trip, station, weather, vehicleRoute, lineRoutes, alerts } = require("../lib/transit");
 
 const PORT = process.env.PORT || 5180;
 const PUBLIC = path.join(__dirname, "..", "public");
@@ -36,7 +36,7 @@ http
       if (url.pathname === "/api/plan") return await json(plan(q("from"), q("to"), q("time"), q("arriveBy") === "1", q("n")), "no-store");
       if (url.pathname === "/api/geocode") return await json(geocode(q("q")), "no-cache");
       if (url.pathname === "/api/trip") return await json(trip(q("id")), "no-cache");
-      if (url.pathname === "/api/vroute") return await json(vehicleRoute(q("type"), q("line"), q("lat"), q("lon"), q("heading"), q("dest"), q("start")), "no-store");
+      if (url.pathname === "/api/vroute") return await json(q("mode") === "line" ? lineRoutes(q("type"), q("line")) : vehicleRoute(q("type"), q("line"), q("lat"), q("lon"), q("heading"), q("dest"), q("start")), "no-store");
       if (url.pathname === "/api/alerts") return await json(alerts(), "no-cache");
       if (url.pathname === "/api/weather") return await json(weather(q("city")), "no-cache");
       if (url.pathname === "/api/station") return await json(station(q("name"), q("lat"), q("lon")), "no-store");
