@@ -767,7 +767,7 @@
   window.tallinnLive = { map }; // handy for debugging in devtools
 
   // ---------- Theme ----------
-  const OWN_SOURCES = new Set(["stops", "stop-sel", "balti-tracks", "fav-stops", "route", "route-pts", "me-acc", "me-circle"]);
+  const OWN_SOURCES = new Set(["stops", "stop-sel", "balti-tracks", "fav-stops", "route", "route-pts", "me-acc", "me-circle", "vroute", "vroute-stops"]);
   const themeOf = () => document.documentElement.dataset.theme === "dark" ? "dark" : "light";
   function applyMapTheme() {
     const paper = cssVar("--paper"), surface = cssVar("--surface");
@@ -989,7 +989,7 @@
     const mps = d.speed != null ? d.speed / 3.6 : null;
     const v = { m, el, popup, shown: false, from: [d.lon, d.lat], t0: now, lastT: now, base: [d.lon, d.lat], baseAt: now, mps, vel: velocity(d, mps), glide: TUNE.snap, data: d };
     v.from = predict(v, now); v.drawn = v.from; m.setLngLat(v.from);
-    el.addEventListener("click", () => { popup.setHTML(popupHtml(v.data)); setHighlight(v.data.line); });
+    el.addEventListener("click", () => { popup.setHTML(popupHtml(v.data)); selectVehicle(v); });
     return v;
   }
   function show(v, on) {
@@ -1110,9 +1110,91 @@
     if (lastStopData) renderStop(lastStopData);
   }
 
-  function setHighlight(line) {
-    highlightLine = highlightLine === line ? null : line;
+  // Tapping a vehicle brings its line forward and draws the route that vehicle is driving; tapping it again lets go.
+  let selVeh = null; // id of the tapped vehicle
+  function selectVehicle(v) {
+    if (selVeh === v.data.id) { selVeh = null; highlightLine = null; clearVRoute(); }
+    else { selVeh = v.data.id; highlightLine = v.data.line; loadVRoute(v); }
     applyHighlight();
+  }
+
+  // ---------- The tapped vehicle's route on the map ----------
+  // Ahead of the vehicle in its colour, the part already driven faded; its stops as small rings, named when zoomed in.
+  const ROUTE_TYPES = new Set(["bus", "tram", "troll", "county", "tartu", "train"]);
+  let vroute = null; // { id, path, stops, color, at }
+  let vrouteReady = false, vrouteTimer = null;
+  async function ensureVRouteLayers() {
+    await ready;
+    if (vrouteReady) return;
+    vrouteReady = true;
+    const empty = { type: "FeatureCollection", features: [] };
+    const width = (a, b) => ["interpolate", ["linear"], ["zoom"], 11, a, 16, b];
+    const fade = (a, b) => ["case", ["get", "ahead"], a, b];
+    map.addSource("vroute", { type: "geojson", data: empty });
+    map.addSource("vroute-stops", { type: "geojson", data: empty });
+    map.addLayer({ id: "vroute-casing", type: "line", source: "vroute", layout: { "line-cap": "round", "line-join": "round" }, paint: { "line-color": cssVar("--surface"), "line-width": width(7, 11), "line-opacity": fade(0.95, 0.5) } });
+    map.addLayer({ id: "vroute-line", type: "line", source: "vroute", layout: { "line-cap": "round", "line-join": "round" }, paint: { "line-color": ["get", "color"], "line-width": width(4, 7), "line-opacity": fade(1, 0.35) } });
+    map.addLayer({ id: "vroute-stops", type: "circle", source: "vroute-stops", minzoom: 12, paint: { "circle-radius": width(2.5, 5), "circle-color": cssVar("--surface"), "circle-stroke-color": ["get", "color"], "circle-stroke-width": width(1.5, 2.5), "circle-opacity": fade(1, 0.5), "circle-stroke-opacity": fade(1, 0.4) } });
+    map.addLayer({ id: "vroute-names", type: "symbol", source: "vroute-stops", minzoom: 14.5, filter: ["get", "ahead"], layout: { "text-field": ["get", "name"], "text-font": ["Noto Sans Bold"], "text-size": 11, "text-anchor": "left", "text-offset": [0.9, 0] }, paint: { "text-color": cssVar("--text"), "text-halo-color": cssVar("--paper"), "text-halo-width": 1.5 } });
+  }
+  // Nearest point of a path to (lon, lat), preferring a stretch that runs the way the vehicle is heading
+  // (a route that comes back along the same road passes every point twice).
+  function onPath(path, lon, lat, heading) {
+    const kx = 111320 * Math.cos((lat * Math.PI) / 180), ky = 111320;
+    let best = { sc: Infinity, d: Infinity, i: 0, p: path[0] };
+    for (let i = 0; i < path.length - 1; i++) {
+      const ax = (path[i][0] - lon) * kx, ay = (path[i][1] - lat) * ky, dx = (path[i + 1][0] - path[i][0]) * kx, dy = (path[i + 1][1] - path[i][1]) * ky;
+      const L = dx * dx + dy * dy;
+      if (!L) continue;
+      const t = Math.max(0, Math.min(1, -(ax * dx + ay * dy) / L));
+      const d = Math.hypot(ax + t * dx, ay + t * dy);
+      let sc = d;
+      if (heading != null) { const brg = (Math.atan2(dx, dy) * 180 / Math.PI + 360) % 360; if (Math.abs(((brg - heading + 540) % 360) - 180) > 100) sc += 60; }
+      if (sc < best.sc) best = { sc, d, i, p: [path[i][0] + t * (path[i + 1][0] - path[i][0]), path[i][1] + t * (path[i + 1][1] - path[i][1])] };
+    }
+    return best;
+  }
+  function clearVRoute() {
+    vroute = null;
+    clearInterval(vrouteTimer); vrouteTimer = null;
+    if (!vrouteReady) return;
+    const empty = { type: "FeatureCollection", features: [] };
+    map.getSource("vroute")?.setData(empty);
+    map.getSource("vroute-stops")?.setData(empty);
+  }
+  async function loadVRoute(v) {
+    clearVRoute();
+    const d = v.data, id = d.id;
+    if (!ROUTE_TYPES.has(d.type)) return;
+    const q = new URLSearchParams({ type: d.type, line: d.line, lat: d.lat, lon: d.lon, heading: d.heading ?? "", dest: d.dest || "", start: d.start || "" });
+    try {
+      const r = await fetch(`/api/vroute?${q}`);
+      if (!r.ok) return;
+      const j = await r.json();
+      if (!j.found || j.path.length < 2 || selVeh !== id) return;
+      await ensureVRouteLayers();
+      if (selVeh !== id) return;
+      vroute = { id, path: j.path, color: MODE_COLOR()[d.type], at: -1, stops: j.stops.map((s) => ({ ...s, i: onPath(j.path, s.lon, s.lat, null).i })) };
+      renderVRoute();
+      vrouteTimer = setInterval(renderVRoute, 1000); // follow the marker as it glides along
+    } catch {}
+  }
+  function renderVRoute() {
+    if (!vroute || !vrouteReady) return;
+    const { path, color } = vroute, v = vehicles.get(vroute.id);
+    let ahead = path, behind = [];
+    if (v && v.shown) {
+      const ll = v.m.getLngLat(), s = onPath(path, ll.lng, ll.lat, v.data.heading ?? null);
+      if (s.d < 250) { behind = [...path.slice(0, s.i + 1), s.p]; ahead = [s.p, ...path.slice(s.i + 1)]; vroute.at = s.i; }
+    }
+    const line = (c, a) => ({ type: "Feature", properties: { color, ahead: a }, geometry: { type: "LineString", coordinates: c } });
+    map.getSource("vroute")?.setData({ type: "FeatureCollection", features: [behind.length > 1 && line(behind, false), line(ahead, true)].filter(Boolean) });
+    map.getSource("vroute-stops")?.setData({ type: "FeatureCollection", features: vroute.stops.map((s) => ({ type: "Feature", properties: { color, name: s.name, ahead: s.i >= vroute.at }, geometry: { type: "Point", coordinates: [s.lon, s.lat] } })) });
+    // Follow the theme (the layers outlive a light/dark swap).
+    map.setPaintProperty("vroute-casing", "line-color", cssVar("--surface"));
+    map.setPaintProperty("vroute-stops", "circle-color", cssVar("--surface"));
+    map.setPaintProperty("vroute-names", "text-color", cssVar("--text"));
+    map.setPaintProperty("vroute-names", "text-halo-color", cssVar("--paper"));
   }
   let highlightLines = null; // Set of lines on the chosen route
   function applyHighlight() {
@@ -1132,7 +1214,7 @@
   }
   map.on("click", (e) => {
     if (e.originalEvent?.target?.closest?.(".veh")) return; // marker click handled above
-    if (highlightLine) { highlightLine = null; applyHighlight(); }
+    if (highlightLine || selVeh) { highlightLine = null; selVeh = null; clearVRoute(); applyHighlight(); }
   });
 
   // ---------- Polling ----------
@@ -2464,7 +2546,7 @@
     map.flyTo({ center: [ll.lng, ll.lat], zoom: Math.max(map.getZoom(), 16), duration: 700 });
     v.popup.setHTML(popupHtml(v.data));
     if (!v.popup.isOpen()) v.m.togglePopup();
-    highlightLine = v.data.line; applyHighlight();
+    if (selVeh !== v.data.id) selectVehicle(v);
   });
 })();
 </script>
