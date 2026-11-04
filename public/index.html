@@ -142,7 +142,10 @@
   #top.search-open .results, #top.search-open .home { overflow-y: auto; scrollbar-width: none; padding: 4px 6px 10px; margin-top: 8px; min-height: 0; }
   #top.search-open.has-q .results { flex: 1; }
   .home .sect { margin: 14px 6px 8px; font-size: 19px; font-weight: 900; letter-spacing: -0.02em; }
-  .home .sect:first-child { margin-top: 6px; }
+  .home .sect:first-child, .home > #recentsBox:not([hidden]) .sect, .home > #recentsBox[hidden] + .sect { margin-top: 6px; }
+  .sectrow { display: flex; align-items: baseline; justify-content: space-between; }
+  .linkbtn { background: none; border: none; padding: 4px 6px; font: inherit; font-size: 14px; font-weight: 700; color: var(--loc); cursor: pointer; }
+  .act .lbl small { color: var(--muted); font-weight: 600; font-size: 12px; margin-left: 6px; }
   .group { background: var(--soft); border-radius: 18px; overflow: hidden; }
   .act { display: flex; align-items: center; gap: 12px; width: 100%; padding: 11px 14px; border: none; background: transparent; color: var(--text); font: inherit; font-size: 15px; font-weight: 800; text-align: left; cursor: pointer; text-decoration: none; }
   .act + .act, .group .favs.on, .act + .favs.on { border-top: 1px solid var(--panel-border); }
@@ -536,6 +539,10 @@
   </div>
   <div class="results" id="results"></div>
   <div class="home">
+    <div id="recentsBox" hidden>
+      <div class="sectrow"><h3 class="sect" data-i18n="recents">Recents</h3><button id="recentsClear" class="linkbtn" data-i18n="clear">Clear</button></div>
+      <div class="group" id="recents"></div>
+    </div>
     <h3 class="sect" data-i18n="saved">Saved</h3>
     <div class="group">
       <button class="act" id="routesChip"><span class="ic" style="--c:#ffb340">🏠</span><span class="lbl" data-i18n="myRoutes">My routes</span><span class="chev">›</span></button>
@@ -677,7 +684,7 @@
       approaching: "approaching", movingAway: "moving away", nothingWithin: "🍃 Nothing within {r} right now.<br>Widen the radius or wait a moment.",
       noFavs: "No favourites yet. Tap ♡ on a stop or on a vehicle's card.", favStops: "❤️ Stops", favLines: "❤️ Lines", remove: "Remove",
       elronStation: "🚆 Elron train station", swap: "Swap start and destination",
-      saved: "Saved", explore: "Explore", vehicles: "Vehicles", onlyFavs: "Only favourites", stopsOnMap: "Stops on the map",
+      recents: "Recents", clear: "Clear", saved: "Saved", explore: "Explore", vehicles: "Vehicles", onlyFavs: "Only favourites", stopsOnMap: "Stops on the map",
       myRoutes: "My routes", saveRoute: "Save this route", routeName: "Name this route (e.g. Home → Work)", routeSaved: "Saved to My routes", routeExists: "Already in My routes",
       noRoutes: "No saved routes yet.<br>Plan a trip in Directions and tap ♡ to keep it here, with its next departures.", openDirections: "🧭 Plan a trip", flip: "Flip direction", noDeps: "No departures found right now.", nowDep: "now", checking: "Checking…", fromMeNoSave: "Choose a destination first.", waitingLocation: "📍 Waiting for your location…",
     },
@@ -707,7 +714,7 @@
       approaching: "läheneb", movingAway: "eemaldub", nothingWithin: "🍃 {r} raadiuses pole praegu midagi.<br>Suurenda raadiust või oota veidi.",
       noFavs: "Lemmikuid veel pole. Puuduta ♡ peatuse paneelil või sõiduki kaardil.", favStops: "❤️ Peatused", favLines: "❤️ Liinid", remove: "Eemalda",
       elronStation: "🚆 Elroni raudteejaam", swap: "Vaheta algus ja sihtkoht",
-      saved: "Salvestatud", explore: "Avasta", vehicles: "Sõidukid", onlyFavs: "Ainult lemmikud", stopsOnMap: "Peatused kaardil",
+      recents: "Hiljutised", clear: "Tühjenda", saved: "Salvestatud", explore: "Avasta", vehicles: "Sõidukid", onlyFavs: "Ainult lemmikud", stopsOnMap: "Peatused kaardil",
       myRoutes: "Minu teekonnad", saveRoute: "Salvesta see teekond", routeName: "Pane teekonnale nimi (nt Koju → Tööle)", routeSaved: "Salvestatud Minu teekondadesse", routeExists: "On juba Minu teekondades",
       noRoutes: "Salvestatud teekondi veel pole.<br>Planeeri teekond ja puuduta ♡, siis näed siin selle järgmisi väljumisi.", openDirections: "🧭 Planeeri teekond", flip: "Pööra suund", noDeps: "Praegu väljumisi ei leitud.", nowDep: "nüüd", checking: "Vaatan…", fromMeNoSave: "Vali kõigepealt sihtkoht.", waitingLocation: "📍 Ootan sinu asukohta…",
     },
@@ -1537,6 +1544,45 @@
   $("#q").addEventListener("focus", renderFavList);
   ready.then(() => { ensureFavLayer(); applyFavMode(); renderFavList(); });
 
+  // ---------- Recents: the last stops, places and lines picked from search, newest first ----------
+  let recents = [];
+  try { recents = JSON.parse(localStorage.getItem("tl.recents") || "[]").filter((r) => r && r.kind); } catch {}
+  const recentKey = (r) => r.kind === "line" ? `l:${r.type}:${r.line}` : r.kind === "stop" ? `s:${r.name}|${r.siri || ""}` : `p:${r.name}|${(+r.lat).toFixed(4)}`;
+  function addRecent(r) {
+    const k = recentKey(r);
+    recents = [{ ...r, at: Date.now() }, ...recents.filter((x) => recentKey(x) !== k)].slice(0, 10);
+    try { localStorage.setItem("tl.recents", JSON.stringify(recents)); } catch {}
+    renderRecents();
+  }
+  function renderRecents() {
+    const shown = recents.slice(0, 3);
+    $("#recentsBox").hidden = !shown.length;
+    $("#recents").innerHTML = shown.map((r, i) => {
+      const [ic, c, name, sub] =
+        r.kind === "line" ? [EMOJI[r.type] || "🚌", `var(--${r.type})`, r.line, TYPE_LABEL[r.type]] :
+        r.kind === "stop" ? [r.train ? "🚆" : "🚏", "var(--stop)", r.name, r.train ? t("trainStation") : ""] :
+        ["📍", "#ef4444", r.name, r.area || ""];
+      return `<button class="act" data-ri="${i}"><span class="ic" style="--c:${c}">${ic}</span><span class="lbl">${esc(name)}${sub ? ` <small>${esc(sub)}</small>` : ""}</span><span class="chev">›</span></button>`;
+    }).join("");
+    $("#recents").querySelectorAll("[data-ri]").forEach((b) => b.addEventListener("click", () => openRecent(shown[Number(b.dataset.ri)])));
+  }
+  function openRecent(r) {
+    if (r.kind === "line") {
+      $("#q").value = r.line; $("#q").dispatchEvent(new Event("input"));
+      const hit = lineResults().find((x) => x.k === lineKeyOf(r.type, r.line));
+      if (hit) showLine(hit);
+      return;
+    }
+    addRecent(r);
+    if (r.kind === "stop") {
+      openStop({ name: r.name, lat: r.lat, lon: r.lon, train: r.train, siri: r.siri || null }, r.siri || null);
+      map.flyTo({ center: [r.lon, r.lat], zoom: Math.max(map.getZoom(), 15.5), duration: 700 });
+    } else openDirections({ name: r.name, lat: r.lat, lon: r.lon });
+    closeSearch();
+  }
+  $("#recentsClear").addEventListener("click", () => { recents = []; try { localStorage.removeItem("tl.recents"); } catch {} renderRecents(); });
+  renderRecents();
+
   window.addEventListener("tl:lang", () => {
     renderNear(); renderFavList(); renderResults();
     if (lastStopData) { renderTabs(lastStopData); renderStop(lastStopData); }
@@ -1626,6 +1672,7 @@
   }
   // Tapping a line: only that line stays on the map, framed in the part above the half-open sheet.
   function showLine(r) {
+    addRecent({ kind: "line", type: r.type, line: r.line });
     lineOnly = r.k;
     refilter();
     $("#q").blur();
@@ -1664,8 +1711,10 @@
     box.querySelectorAll(".result:not(.line)").forEach((row) => {
       const g = top[Number(row.dataset.i)];
       row.addEventListener("click", (e) => {
-        if (e.target.closest("[data-go]")) { const p = g.platforms[0]; clearQuery(); openDirections({ name: g.name, lat: p.lat, lon: p.lon }); closeSearch(); return; }
         const btn = e.target.closest(".dirbtn");
+        const p0 = (btn && g.platforms.find((x) => x.siri === btn.dataset.siri)) || g.platforms[0];
+        addRecent({ kind: "stop", name: g.name, lat: p0.lat, lon: p0.lon, siri: btn ? btn.dataset.siri : null, train: !!g.platforms[0].train });
+        if (e.target.closest("[data-go]")) { const p = g.platforms[0]; clearQuery(); openDirections({ name: g.name, lat: p.lat, lon: p.lon }); closeSearch(); return; }
         clearQuery();
         selectStop(g, btn ? btn.dataset.siri : null);
       });
@@ -1685,7 +1734,7 @@
           </div>`).join("");
         pr.querySelectorAll(".result.place").forEach((row) => {
           const r = places[Number(row.dataset.i)];
-          row.addEventListener("click", () => { clearQuery(); openDirections({ name: r.name, lat: r.lat, lon: r.lon }); closeSearch(); });
+          row.addEventListener("click", () => { addRecent({ kind: "place", name: r.name, area: r.area || "", lat: r.lat, lon: r.lon }); clearQuery(); openDirections({ name: r.name, lat: r.lat, lon: r.lon }); closeSearch(); });
         });
       } catch {}
     }, 300);
