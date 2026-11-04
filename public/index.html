@@ -542,6 +542,11 @@
   .pop:has(.nexts:not(:empty)) { align-items: flex-start; }
   .pop .dest { font-weight: 900; font-size: 14px; }
   .pop .sm { font-size: 12px; font-weight: 600; color: var(--muted); }
+  .sharebtn svg, .popshare svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; display: block; }
+  .popshare { background: transparent; border: none; padding: 0 2px; margin-left: 2px; color: var(--muted); cursor: pointer; vertical-align: middle; display: inline-flex; }
+  .popshare svg { width: 15px; height: 15px; }
+  #toast { position: fixed; left: 50%; bottom: calc(96px + env(safe-area-inset-bottom)); transform: translateX(-50%) translateY(10px); z-index: 3000; background: var(--text); color: var(--bg); padding: 9px 16px; border-radius: 999px; font-size: 13.5px; font-weight: 800; box-shadow: var(--shadow); opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s; max-width: calc(100vw - 32px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #toast.on { opacity: 1; transform: translateX(-50%); }
   /* the tapped vehicle's next stops, under its line and direction */
   .pop .nexts:empty { display: none; }
   .pop .nexts { margin-top: 8px; padding-top: 7px; border-top: 1px solid var(--panel-border); min-width: 190px; }
@@ -652,7 +657,7 @@
     <div class="grab"></div>
     <header>
       <h2><span class="emo">🧭</span><span data-i18n="directions">Directions</span></h2>
-      <div class="right"><button class="favbtn" id="dirSave" title="Save this route" data-i18n-title="saveRoute">♡</button><button class="iconbtn" id="dirClose" title="Close">✕</button></div>
+      <div class="right"><button class="favbtn" id="dirSave" title="Save this route" data-i18n-title="saveRoute">♡</button><button class="iconbtn sharebtn" id="dirShare" title="Share" data-i18n-title="share"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3M7.5 7.5 12 3l4.5 4.5M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg></button><button class="iconbtn" id="dirClose" title="Close">✕</button></div>
     </header>
     <div class="dirform">
       <div class="rail"><span class="o"></span><span class="dots"></span><span class="pin"></span></div>
@@ -672,7 +677,7 @@
     <div class="grab"></div>
     <header>
       <h2><span class="emo">🚏</span><span id="stopName">Stop</span></h2>
-      <div class="right"><span class="sub" id="stopUpdated"></span><button class="favbtn" id="stopFav" title="Favourite this stop">♡</button><button class="dirgo" id="stopDir">🧭 <span data-i18n="go">Go</span></button><button class="iconbtn" id="stopClose" title="Close">✕</button></div>
+      <div class="right"><span class="sub" id="stopUpdated"></span><button class="favbtn" id="stopFav" title="Favourite this stop">♡</button><button class="dirgo" id="stopDir">🧭 <span data-i18n="go">Go</span></button><button class="iconbtn sharebtn" id="stopShare" title="Share" data-i18n-title="share"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3M7.5 7.5 12 3l4.5 4.5M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg></button><button class="iconbtn" id="stopClose" title="Close">✕</button></div>
     </header>
     <div class="tabs" id="stopTabs"></div>
     <div class="list" id="stopList"></div>
@@ -729,6 +734,7 @@
   </aside>
 </div>
 
+<div id="toast" role="status" aria-live="polite"></div>
 <div class="onb" id="onb">
   <div class="card">
     <div class="big">📍</div>
@@ -775,7 +781,7 @@
       approaching: "approaching", movingAway: "moving away", nothingWithin: "🍃 Nothing within {r} right now.<br>Widen the radius or wait a moment.",
       noFavs: "No favourites yet. Tap ♡ on a stop or on a vehicle's card.", favStops: "❤️ Stops", favLines: "❤️ Lines", remove: "Remove",
       elronStation: "🚆 Elron train station", swap: "Swap start and destination",
-      waitingN: "{n} waiting to leave", lineLoading: "Loading the route…", lineNoRoute: "Its route isn't available right now: none of its vehicles is out on a trip.", vehHere: "here", nextStops: "Next stops", allStops: "All stops ({n})", hideStops: "Fewer stops", minShort: "{n} min", recents: "Recents", clear: "Clear", alerts: "Service alerts", alertsSource: "Source: Tallinna Transport. Notices are in Estonian.", noAlerts: "No service alerts right now.", alertN: "{n} alert", alertsN: "{n} alerts", allAlerts: "All alerts", alertsFor: "Alerts for line {line}", alertNow: "Now", alertFrom: "From {d}", showMore: "Show more", saved: "Saved", explore: "Explore", vehicles: "Vehicles", onlyFavs: "Only favourites", stopsOnMap: "Stops on the map",
+      share: "Share", linkCopied: "Link copied", vehGone: "That vehicle isn't on the road any more.", waitingN: "{n} waiting to leave", lineLoading: "Loading the route…", lineNoRoute: "Its route isn't available right now: none of its vehicles is out on a trip.", vehHere: "here", nextStops: "Next stops", allStops: "All stops ({n})", hideStops: "Fewer stops", minShort: "{n} min", recents: "Recents", clear: "Clear", alerts: "Service alerts", alertsSource: "Source: Tallinna Transport. Notices are in Estonian.", noAlerts: "No service alerts right now.", alertN: "{n} alert", alertsN: "{n} alerts", allAlerts: "All alerts", alertsFor: "Alerts for line {line}", alertNow: "Now", alertFrom: "From {d}", showMore: "Show more", saved: "Saved", explore: "Explore", vehicles: "Vehicles", onlyFavs: "Only favourites", stopsOnMap: "Stops on the map",
       myRoutes: "My routes", saveRoute: "Save this route", routeName: "Name this route (e.g. Home → Work)", routeSaved: "Saved to My routes", routeExists: "Already in My routes",
       noRoutes: "No saved routes yet.<br>Plan a trip in Directions and tap ♡ to keep it here, with its next departures.", openDirections: "🧭 Plan a trip", flip: "Flip direction", noDeps: "No departures found right now.", nowDep: "now", checking: "Checking…", fromMeNoSave: "Choose a destination first.", waitingLocation: "📍 Waiting for your location…",
     },
@@ -805,7 +811,7 @@
       approaching: "läheneb", movingAway: "eemaldub", nothingWithin: "🍃 {r} raadiuses pole praegu midagi.<br>Suurenda raadiust või oota veidi.",
       noFavs: "Lemmikuid veel pole. Puuduta ♡ peatuse paneelil või sõiduki kaardil.", favStops: "❤️ Peatused", favLines: "❤️ Liinid", remove: "Eemalda",
       elronStation: "🚆 Elroni raudteejaam", swap: "Vaheta algus ja sihtkoht",
-      waitingN: "{n} ootab väljumist", lineLoading: "Laen liini…", lineNoRoute: "Liini teekonda praegu pole: ükski sõiduk pole reisil.", vehHere: "siin", nextStops: "Järgmised peatused", allStops: "Kõik peatused ({n})", hideStops: "Vähem peatusi", minShort: "{n} min", recents: "Hiljutised", clear: "Tühjenda", alerts: "Liiklusteated", alertsSource: "Allikas: Tallinna Transport.", noAlerts: "Praegu teateid ei ole.", alertN: "{n} teade", alertsN: "{n} teadet", allAlerts: "Kõik teated", alertsFor: "Liini {line} teated", alertNow: "Praegu", alertFrom: "Alates {d}", showMore: "Loe edasi", saved: "Salvestatud", explore: "Avasta", vehicles: "Sõidukid", onlyFavs: "Ainult lemmikud", stopsOnMap: "Peatused kaardil",
+      share: "Jaga", linkCopied: "Link kopeeritud", vehGone: "Seda sõidukit pole enam teel.", waitingN: "{n} ootab väljumist", lineLoading: "Laen liini…", lineNoRoute: "Liini teekonda praegu pole: ükski sõiduk pole reisil.", vehHere: "siin", nextStops: "Järgmised peatused", allStops: "Kõik peatused ({n})", hideStops: "Vähem peatusi", minShort: "{n} min", recents: "Hiljutised", clear: "Tühjenda", alerts: "Liiklusteated", alertsSource: "Allikas: Tallinna Transport.", noAlerts: "Praegu teateid ei ole.", alertN: "{n} teade", alertsN: "{n} teadet", allAlerts: "Kõik teated", alertsFor: "Liini {line} teated", alertNow: "Praegu", alertFrom: "Alates {d}", showMore: "Loe edasi", saved: "Salvestatud", explore: "Avasta", vehicles: "Sõidukid", onlyFavs: "Ainult lemmikud", stopsOnMap: "Peatused kaardil",
       myRoutes: "Minu teekonnad", saveRoute: "Salvesta see teekond", routeName: "Pane teekonnale nimi (nt Koju → Tööle)", routeSaved: "Salvestatud Minu teekondadesse", routeExists: "On juba Minu teekondades",
       noRoutes: "Salvestatud teekondi veel pole.<br>Planeeri teekond ja puuduta ♡, siis näed siin selle järgmisi väljumisi.", openDirections: "🧭 Planeeri teekond", flip: "Pööra suund", noDeps: "Praegu väljumisi ei leitud.", nowDep: "nüüd", checking: "Vaatan…", fromMeNoSave: "Vali kõigepealt sihtkoht.", waitingLocation: "📍 Ootan sinu asukohta…",
     },
@@ -1016,6 +1022,7 @@
   const fmtClock = (sec) => `${String(Math.floor(sec / 3600) % 24).padStart(2, "0")}:${String(Math.floor(sec / 60) % 60).padStart(2, "0")}`;
   const lineKey = (s) => s.trim().toUpperCase();
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const SHARE_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3M7.5 7.5 12 3l4.5 4.5M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>';
   const badge = (type, line) => `<span class="badge ${type}"><span class="emo">${EMOJI[type]}</span>${esc(line)}</span>`;
   function circlePolygon(lat, lon, r, n = 72) {
     const ring = [];
@@ -1040,7 +1047,7 @@
       const delay = d.delay > 0 ? `<b style="color:var(--warn)">${t("late", { n: d.delay })}</b>` : d.status === "hilineb peatuses" ? `<b style="color:var(--warn)">${t("heldAtStop")}</b>` : `<b style="color:var(--good)">${t("onTime")}</b>`;
       return `<div class="pop">
         ${badge(d.type, d.label)}
-        <div><div class="dest">${esc(d.route)} <button class="favline ${isFavLine(d.type, d.route) ? "on" : ""}" data-type="${d.type}" data-line="${esc(d.route)}" title="Favourite this train route">${isFavLine(d.type, d.route) ? "♥" : "♡"}</button></div>
+        <div><div class="dest">${esc(d.route)} <button class="favline ${isFavLine(d.type, d.route) ? "on" : ""}" data-type="${d.type}" data-line="${esc(d.route)}" title="Favourite this train route">${isFavLine(d.type, d.route) ? "♥" : "♡"}</button><button class="popshare" data-share-veh="${esc(d.id)}" title="${t("share")}">${SHARE_ICON}</button></div>
         <div class="sm">${t("trainN", { n: esc(d.line) })}${d.track ? " · 🚉 " + t("track", { n: d.track }) : ""} · ${d.speed} km/h · ${delay}</div>
         <div class="sm">${t("lastStop")}: ${esc(d.lastStop || "—")} · ${esc(d.start)}–${esc(d.end)}</div>
         ${d.note ? `<div class="sm">⚠️ ${esc(d.note)}</div>` : ""}<div class="nexts"></div></div>
@@ -1050,7 +1057,7 @@
     const alBtn = nAl ? `<button class="awarn" data-alert-type="${d.type}" data-alert-line="${esc(d.line)}">⚠️ ${t(nAl === 1 ? "alertN" : "alertsN", { n: nAl })}</button>` : "";
     return `<div class="pop">
       ${badge(d.type, d.line)}
-      <div><div class="dest">→ ${esc(d.dest || (d.dir === "IB" ? t("inbound") : d.dir === "OB" ? t("outbound") : "—"))} <button class="favline ${isFavLine(d.type, d.line) ? "on" : ""}" data-type="${d.type}" data-line="${esc(d.line)}" title="Favourite line ${esc(d.line)}">${isFavLine(d.type, d.line) ? "♥" : "♡"}</button></div>
+      <div><div class="dest">→ ${esc(d.dest || (d.dir === "IB" ? t("inbound") : d.dir === "OB" ? t("outbound") : "—"))} <button class="favline ${isFavLine(d.type, d.line) ? "on" : ""}" data-type="${d.type}" data-line="${esc(d.line)}" title="Favourite line ${esc(d.line)}">${isFavLine(d.type, d.line) ? "♥" : "♡"}</button><button class="popshare" data-share-veh="${esc(d.id)}" title="${t("share")}">${SHARE_ICON}</button></div>
       <div class="sm">${d.type === "county" ? t("countyLine", { n: esc(d.line) }) + (d.dir === "IB" ? " · " + t("inbound") : d.dir === "OB" ? " · " + t("outbound") : "") : d.type === "tartu" ? t("tartuLine", { n: esc(d.line) }) : TYPE_LABEL[d.type] + " · " + t("vehicle") + " " + esc(d.id)}${d.speed != null ? " · " + d.speed + " km/h" : ""}${d.lowFloor ? " · " + t("lowFloor") : ""}</div>${alBtn}<div class="nexts"></div></div>
     </div>`;
   }
@@ -1628,7 +1635,7 @@
     setStopsVisible($("#stopsToggle").checked);
     renderResults();
   }
-  loadStops();
+  const stopsReady = loadStops();
   function setStopsVisible(on) {
     for (const id of ["stops", "stations", "stops-hit"]) if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", on ? "visible" : "none");
   }
@@ -1953,6 +1960,74 @@
     }
   });
   $("#lineClose").addEventListener("click", () => closeLine(true));
+
+  // ---------- Share links: a stop, a planned trip or a vehicle, opened straight from the link ----------
+  // The phone's own share sheet where there is one, else the link is copied. A trip from "Your location"
+  // shares only its destination: whoever opens it gets directions from where they are, not from you.
+  let toastTimer = null;
+  function toast(msg) { const el = $("#toast"); el.textContent = msg; el.classList.add("on"); clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove("on"), 2200); }
+  const ll5 = (lat, lon) => `${(+lat).toFixed(5)},${(+lon).toFixed(5)}`;
+  const shareUrl = (params) => { const u = new URL("/", location.origin); for (const [k, v] of Object.entries(params)) if (v != null && v !== "") u.searchParams.set(k, v); return u.toString(); };
+  async function shareLink(title, url) {
+    try { if (navigator.share) { await navigator.share({ title, url }); return; } }
+    catch (e) { if (e && e.name === "AbortError") return; }
+    try { await navigator.clipboard.writeText(url); toast(t("linkCopied")); return; } catch {}
+    try { // no clipboard API off https: the old way still copies
+      const ta = Object.assign(document.createElement("textarea"), { value: url, readOnly: true });
+      ta.style.cssText = "position:fixed;top:0;left:0;opacity:0;font-size:16px";
+      document.body.appendChild(ta); ta.select(); ta.setSelectionRange(0, url.length);
+      const ok = document.execCommand("copy"); ta.remove();
+      if (ok) { toast(t("linkCopied")); return; }
+    } catch {}
+    toast(url);
+  }
+  $("#stopShare").addEventListener("click", () => {
+    const f = favTarget(); if (!f) return;
+    shareLink(`${f.name} · Tallinn Live`, shareUrl({ s: f.name, at: ll5(f.lat, f.lon), p: f.siri || null, tr: curStop?.train ? 1 : null }));
+  });
+  $("#dirShare").addEventListener("click", () => {
+    if (!dir.to || dir.to.isMe) { toast(t("fromMeNoSave")); return; }
+    const from = dir.from && !dir.from.isMe ? dir.from : null;
+    shareLink(`${from ? from.name + " → " : "→ "}${dir.to.name} · Tallinn Live`, shareUrl({ to: dir.to.name, tll: ll5(dir.to.lat, dir.to.lon), from: from?.name, fll: from ? ll5(from.lat, from.lon) : null }));
+  });
+  document.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-share-veh]"); if (!b) return;
+    e.stopPropagation();
+    const v = vehicles.get(b.dataset.shareVeh); if (!v) return;
+    const d = v.data;
+    shareLink(`${d.label || d.line} → ${d.dest || d.route || ""} · Tallinn Live`, shareUrl({ v: d.id }));
+  }, true);
+  // Opening a shared link
+  (async () => {
+    const q = new URLSearchParams(location.search);
+    const pt = (s) => { const m = /^(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)$/.exec(s || ""); return m ? { lat: +m[1], lon: +m[2] } : null; };
+    const keys = ["s", "at", "p", "tr", "to", "tll", "from", "fll", "v"];
+    if (!keys.some((k) => q.has(k))) return;
+    const rest = new URLSearchParams(location.search); keys.forEach((k) => rest.delete(k));
+    history.replaceState(null, "", location.pathname + (rest.toString() ? "?" + rest : "")); // a reload shouldn't reopen it
+    await ready;
+    if (q.has("s") && pt(q.get("at"))) {
+      await stopsReady.catch(() => {});
+      const { lat, lon } = pt(q.get("at")), siri = q.get("p") || null;
+      openStop({ name: q.get("s"), lat, lon, train: q.get("tr") === "1", siri }, siri);
+      map.jumpTo({ center: [lon, lat], zoom: 16 });
+    } else if (q.has("to") && pt(q.get("tll"))) {
+      const to = { name: q.get("to"), ...pt(q.get("tll")) };
+      const f = pt(q.get("fll"));
+      openDirections(to, f && q.get("from") ? { name: q.get("from"), ...f } : undefined);
+    } else if (q.has("v")) {
+      const id = q.get("v");
+      for (let i = 0; i < 60 && !vehicles.size; i++) await new Promise((r) => setTimeout(r, 250)); // the first feed
+      const v = vehicles.get(id);
+      if (!v) { toast(t("vehGone")); return; }
+      if (!enabled[v.data.type]) { enabled[v.data.type] = true; document.querySelector(`.chip[data-type="${v.data.type}"]`)?.classList.remove("off"); refilter(); }
+      const ll = v.m.getLngLat();
+      map.jumpTo({ center: [ll.lng, ll.lat], zoom: 15.5 });
+      v.popup.setHTML(popupHtml(v.data));
+      if (!v.popup.isOpen()) v.m.togglePopup();
+      selectVehicle(v);
+    }
+  })();
 
   // ---------- Recents: the last stops, places and lines picked from search, newest first ----------
   let recents = [];
@@ -2361,6 +2436,8 @@
 
   // ---------- Directions (A → B by public transport, via Transitous) ----------
   const dir = { from: null, to: null, active: null, itins: [], sel: -1, pick: null, seq: 0 };
+  // Length of a walk leg along its path (or straight across when there is none).
+  const walkLen = (l) => { const p = l.path && l.path.length > 1 ? l.path : [[l.from.lon, l.from.lat], [l.to.lon, l.to.lat]]; let m = 0; for (let k = 1; k < p.length; k++) m += metersBetween(p[k - 1], p[k]); return m; };
   const MODE_EMOJI = { bus: "🚌", tram: "🚋", troll: "🚎", train: "🚆", rail: "🚆", ferry: "⛴️", walk: "🚶" };
   const cssVar = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
   const MODE_COLOR = () => ({ bus: cssVar("--bus"), tram: cssVar("--tram"), troll: cssVar("--troll"), train: cssVar("--train"), county: cssVar("--county"), tartu: cssVar("--tartu"), rail: cssVar("--train"), ferry: "#7fc8e8" });
@@ -2525,7 +2602,7 @@
     for (const l of it.legs) {
       if (l.mode === "walk") {
         if (l.duration < 45) continue;
-        out.push(`<div class="lg walk"><div class="t">${fmtT(l.startTime)}</div><div class="bar"><i></i></div><div class="body">${t("walkMin", { n: Math.round(l.duration / 60) })}<small>${t("mTo", { m: Math.round(l.distance), name: esc(nm(l.to)) })}</small></div></div>`);
+        out.push(`<div class="lg walk"><div class="t">${fmtT(l.startTime)}</div><div class="bar"><i></i></div><div class="body">${t("walkMin", { n: Math.round(l.duration / 60) })}<small>${t("mTo", { m: Math.round(Number.isFinite(l.distance) ? l.distance : walkLen(l)), name: esc(nm(l.to)) })}</small></div></div>`);
       } else {
         const c = MODE_COLOR()[l.mode] || "#999";
         out.push(`<div class="lg" style="--c:${c}"><div class="t">${fmtT(l.startTime)}</div><div class="bar"><i></i></div><div class="body"><span class="badge ${l.mode}"><span class="emo">${MODE_EMOJI[l.mode] || "🚌"}</span>${esc(l.line || "")}</span>→ ${esc(l.headsign || l.to.name)}<small>${t("boardAt", { name: esc(nm(l.from)) })} · ${t(l.stops.length ? "stopsNp" : "stopsN", { n: l.stops.length + 1 })} · ${fmtDur(l.duration)}</small><small>${t("getOffAt", { name: esc(nm(l.to)) })} · ${fmtT(l.endTime)}</small><div class="lv" data-leg="${it.legs.indexOf(l)}"></div></div></div>`);
