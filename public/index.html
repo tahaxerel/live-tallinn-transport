@@ -237,6 +237,8 @@
   .result:hover { background: var(--hover); }
   .result .name { font-weight: 800; font-size: 13px; display: flex; gap: 6px; align-items: center; }
   .result .name small { color: var(--muted); font-weight: 600; font-size: 11px; }
+  .result.line .name { font-size: 14px; }
+  .result .dests { color: var(--muted); font-size: 12px; font-weight: 700; padding-left: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .result .dirs { display: flex; flex-wrap: wrap; gap: 4px; }
   .dirbtn { display: inline-flex; align-items: center; gap: 5px; font-family: inherit; font-size: 11px; font-weight: 700; color: var(--accent-text); background: rgba(183,163,232,0.22); border: 1.5px solid transparent; border-radius: 999px; padding: 3px 9px 3px 4px; cursor: pointer; max-width: 100%; }
   .dirbtn:hover, .dirbtn.on { background: rgba(183,163,232,0.4); border-color: var(--stop); }
@@ -662,7 +664,7 @@
       vehicle: "vehicle", lowFloor: "♿ low floor", lastStop: "Last stop", onTime: "on time", heldAtStop: "held at a stop", late: "{n} min late", early: "{n} min early", trainN: "Train {n}",
       loadingDepartures: "Loading departures…", noDepartures: "No upcoming departures from {name}.", platform: "platform", departuresFailed: "Couldn't load departures.<br>Retrying shortly.", timetable: "timetable", cancelled: "cancelled", now: "now", min: "min",
       loadingTrains: "Loading trains…", track: "Track {n}", noMoreTrains: "No more trains from {name} today.", trainStation: "train station", noDeps: "no departures",
-      noStopCalled: "No stop called “{q}”.", nothingFound: "Nothing found for “{q}”.", platforms: "{n} platforms",
+      noStopCalled: "No stop called “{q}”.", nothingFound: "Nothing found for “{q}”.", lineLive: "{n} on the road", noLiveLine: "No line {q} on the road right now.", platforms: "{n} platforms",
       yourLocation: "Your location", chooseOnMap: "Choose on the map", tapMapFor: "Tap the map to set the {what}.", theStart: "start", theDestination: "destination", stop: "stop", pinned: "Pinned location",
       noStartYet: "No start yet. Allow location, or tap the start field and choose a place.", findingRoutes: "Finding routes…", noRoute: "😕 No public transport route found right now.", plannerDown: "Couldn't reach the route planner. Try again in a moment.",
       leavesNow: "leaves now", leavesIn: "leaves in {t}", hourShort: "h", walk: "walk", noTransfers: "no transfers", transfer: "1 transfer", transfers: "{n} transfers",
@@ -692,7 +694,7 @@
       vehicle: "sõiduk", lowFloor: "♿ madalapõhjaline", lastStop: "Viimane peatus", onTime: "graafikus", heldAtStop: "seisab peatuses", late: "{n} min hilinemisega", early: "{n} min varem", trainN: "Rong {n}",
       loadingDepartures: "Laen väljumisi…", noDepartures: "Peatusest {name} pole lähiajal väljumisi.", platform: "platvorm", departuresFailed: "Väljumisi ei õnnestunud laadida.<br>Proovin varsti uuesti.", timetable: "sõiduplaan", cancelled: "tühistatud", now: "nüüd", min: "min",
       loadingTrains: "Laen ronge…", track: "{n}. tee", noMoreTrains: "Jaamast {name} täna rohkem ronge ei välju.", trainStation: "raudteejaam", noDeps: "väljumisi pole",
-      noStopCalled: "Peatust „{q}” ei leitud.", nothingFound: "Otsingule „{q}” ei leitud midagi.", platforms: "{n} platvormi",
+      noStopCalled: "Peatust „{q}” ei leitud.", nothingFound: "Otsingule „{q}” ei leitud midagi.", lineLive: "{n} teel", noLiveLine: "Liini {q} sõidukeid praegu teel ei ole.", platforms: "{n} platvormi",
       yourLocation: "Minu asukoht", chooseOnMap: "Vali kaardilt", tapMapFor: "Puuduta kaarti, et määrata {what}.", theStart: "alguspunkt", theDestination: "sihtkoht", stop: "peatus", pinned: "Märgitud asukoht",
       noStartYet: "Alguspunkti pole. Luba asukoht või puuduta algusvälja ja vali koht.", findingRoutes: "Otsin teekondi…", noRoute: "😕 Praegu ühistranspordi teekonda ei leitud.", plannerDown: "Reisiplaneerijaga ei saanud ühendust. Proovi hetke pärast uuesti.",
       leavesNow: "väljub kohe", leavesIn: "väljub {t} pärast", hourShort: "t", walk: "jalgsi", noTransfers: "ümberistumisteta", transfer: "1 ümberistumine", transfers: "{n} ümberistumist",
@@ -927,9 +929,11 @@
     return { type: "Feature", geometry: { type: "Polygon", coordinates: [ring] } };
   }
 
+  let lineOnly = null; // "type:LINE" once a line is picked from the search results (Tallinn 3 and Tartu 3 are different buses)
   function visible(d) {
     if (!enabled[d.type]) return false;
     if (lineFilter.size && !lineFilter.has(lineKey(d.line))) return false;
+    if (lineOnly && lineKeyOf(d.type, d.line) !== lineOnly) return false;
     return true;
   }
 
@@ -1387,6 +1391,7 @@
   $("#q").addEventListener("input", (e) => {
     const tokens = e.target.value.split(/[,\s]+/).map(lineKey).filter(Boolean);
     lineFilter = new Set(tokens.filter(isLineToken));
+    lineOnly = null;
     stopQuery = tokens.filter((t) => !isLineToken(t)).join(" ");
     refilter();
     renderResults();
@@ -1595,25 +1600,73 @@
   }
   let resultSeq = 0;
   let geoTimer = null;
+  // A line number in the search: one row per line on the road (by type), with how many vehicles and where they head.
+  function lineResults() {
+    const by = new Map();
+    for (const v of vehicles.values()) {
+      const d = v.data;
+      if (d.type === "train" || !enabled[d.type] || !lineFilter.has(lineKey(d.line))) continue;
+      const k = lineKeyOf(d.type, d.line);
+      if (!by.has(k)) by.set(k, { k, type: d.type, line: d.line, n: 0, dests: new Map() });
+      const r = by.get(k); r.n++;
+      if (d.dest) r.dests.set(d.dest, (r.dests.get(d.dest) || 0) + 1);
+    }
+    return [...by.values()].sort((a, b) => b.n - a.n);
+  }
+  function lineResultsHtml(lines) {
+    if (!lineFilter.size) return "";
+    if (!lines.length) return `<div class="empty" style="padding:10px">${t("noLiveLine", { q: esc([...lineFilter].join(", ")) })}</div>`;
+    return lines.map((r, i) => {
+      const dests = [...r.dests].sort((a, b) => b[1] - a[1]).slice(0, 2).map(([d]) => esc(d)).join(" · ");
+      return `<div class="result line" data-li="${i}">
+        <div class="name">${badge(r.type, r.line)} ${TYPE_LABEL[r.type]} <small>${t("lineLive", { n: r.n })}</small></div>
+        ${dests ? `<div class="dests">→ ${dests}</div>` : ""}
+      </div>`;
+    }).join("");
+  }
+  // Tapping a line: only that line stays on the map, framed in the part above the half-open sheet.
+  function showLine(r) {
+    lineOnly = r.k;
+    refilter();
+    $("#q").blur();
+    if (isMobile()) setSheet("half");
+    const pts = [...vehicles.values()].filter((v) => v.shown).map((v) => { const ll = v.m.getLngLat(); return [ll.lng, ll.lat]; });
+    if (!pts.length) return;
+    const b = pts.reduce((b, p) => b.extend(p), new maplibregl.LngLatBounds(pts[0], pts[0]));
+    const pad = isMobile() ? { top: 70, left: 40, right: 40, bottom: Math.round(innerHeight * 0.5) + 30 } : { top: 60, right: 60, bottom: 60, left: 420 };
+    map.fitBounds(b, { padding: pad, maxZoom: 15, duration: 700 });
+  }
+  function bindLineResults(box, lines) {
+    box.querySelectorAll(".result.line").forEach((row) => row.addEventListener("click", () => showLine(lines[Number(row.dataset.li)])));
+  }
+  // A stop or place picked from the results has done its job: the bar starts empty next time.
+  // (A line number stays: it is the filter on the map.)
+  function clearQuery() { $("#q").value = ""; $("#q").dispatchEvent(new Event("input")); }
   async function renderResults() {
     const box = $("#results");
     const q = norm(stopQuery.trim());
-    if (q.length < 2 || !stops.length) { box.className = "results"; box.innerHTML = ""; return; }
+    const lines = lineResults(), lineHtml = lineResultsHtml(lines);
+    if (q.length < 2 || !stops.length) {
+      if (!lineHtml) { box.className = "results"; box.innerHTML = ""; return; }
+      box.className = "results on"; box.innerHTML = lineHtml; bindLineResults(box, lines); return;
+    }
     const hits = allClusters().filter((g) => norm(g.name).includes(q));
     hits.sort((a, b) => (norm(b.name).startsWith(q) - norm(a.name).startsWith(q)) || a.name.localeCompare(b.name));
     const top = hits.slice(0, 4);
     const seq = ++resultSeq;
     box.className = "results on";
-    box.innerHTML = top.map((g, i) => `<div class="result" data-i="${i}">
+    box.innerHTML = lineHtml + top.map((g, i) => `<div class="result" data-i="${i}">
         <div class="name">${g.platforms[0].train ? "🚆" : "🚏"} ${esc(g.name)} <small>${g.platforms[0].train ? t("trainStation") : g.platforms.length > 1 ? t("platforms", { n: g.platforms.length }) : ""}</small></div>
         <div class="dirs">${g.platforms[0].train ? "" : g.platforms.map((p) => dirBtnHtml(g, p, null)).join("")}</div>
         <div class="go"><button class="dirgo" data-go="1">🧭 ${t("directions")}</button></div>
       </div>`).join("") + `<div id="placeResults"></div>`;
-    box.querySelectorAll(".result").forEach((row) => {
+    bindLineResults(box, lines);
+    box.querySelectorAll(".result:not(.line)").forEach((row) => {
       const g = top[Number(row.dataset.i)];
       row.addEventListener("click", (e) => {
-        if (e.target.closest("[data-go]")) { const p = g.platforms[0]; openDirections({ name: g.name, lat: p.lat, lon: p.lon }); closeSearch(); return; }
+        if (e.target.closest("[data-go]")) { const p = g.platforms[0]; clearQuery(); openDirections({ name: g.name, lat: p.lat, lon: p.lon }); closeSearch(); return; }
         const btn = e.target.closest(".dirbtn");
+        clearQuery();
         selectStop(g, btn ? btn.dataset.siri : null);
       });
     });
@@ -1632,7 +1685,7 @@
           </div>`).join("");
         pr.querySelectorAll(".result.place").forEach((row) => {
           const r = places[Number(row.dataset.i)];
-          row.addEventListener("click", () => { openDirections({ name: r.name, lat: r.lat, lon: r.lon }); closeSearch(); });
+          row.addEventListener("click", () => { clearQuery(); openDirections({ name: r.name, lat: r.lat, lon: r.lon }); closeSearch(); });
         });
       } catch {}
     }, 300);
