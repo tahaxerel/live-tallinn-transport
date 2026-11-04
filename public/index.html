@@ -232,7 +232,8 @@
   .favs .fhead { font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); padding: 10px 14px 2px; }
   .favs .frow { display: flex; align-items: center; gap: 12px; padding: 9px 14px; cursor: pointer; font-weight: 800; font-size: 14px; }
   .favs .frow:hover { background: var(--hover); }
-  .favs .frow > span:first-child { width: 32px; text-align: center; font-size: 17px; flex: none; }
+  .favs .frow > span:first-child:not(.badge) { width: 32px; text-align: center; font-size: 17px; flex: none; }
+  .favs .frow > .badge { flex: none; min-width: 54px; justify-content: center; }
   .favs .frow span.n { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .favs .frow .x { background: transparent; border: none; cursor: pointer; font-size: 15px; color: var(--heart); }
   .favs .frow small { color: var(--muted); font-weight: 600; font-size: 12px; }
