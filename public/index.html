@@ -168,8 +168,13 @@
     /* closed: a floating bar at the bottom; open: a sheet that fills the screen below the status bar */
     #top { top: auto; left: 12px; right: 12px; width: auto; bottom: calc(12px + env(safe-area-inset-bottom)); padding: 7px; transition: none; }
     #top.search-open { top: calc(48px + env(safe-area-inset-top)); left: 0; right: 0; bottom: 0; border-radius: 26px 26px 0 0; border-bottom: none; padding: 0 10px env(safe-area-inset-bottom); }
-    #top.search-open > .grab { display: block; margin-bottom: 8px; }
+    #top.search-open > .grab { display: block; margin-bottom: 8px; cursor: grab; touch-action: none; }
     #top.search-open .results, #top.search-open .home { flex: 1; }
+    /* first tap opens the sheet halfway without the keyboard; tapping the search field again takes it to the top and types */
+    #top.search-open { transition: top .25s ease; }
+    #top.search-open.half { top: 50dvh; }
+    #top:not(.search-open) #q, #top.half #q { pointer-events: none; }
+    #top:not(.search-open) .search, #top.half .search { cursor: text; }
     /* a card for a stop, a route or the near-me list takes the bar's place, like Apple's place cards */
     body:has(#side > .panel.on) #top:not(.search-open), body.dir-open #top:not(.search-open) { display: none; }
   }
@@ -1260,11 +1265,39 @@
   }
   // The search bar opens into the home sheet (saved places, shortcuts, vehicle filters); typing swaps it for results.
   const syncQ = () => $("#top").classList.toggle("has-q", !!$("#q").value.trim());
-  $("#q").addEventListener("focus", () => $("#top").classList.add("search-open"));
+  $("#q").addEventListener("focus", () => { $("#top").classList.add("search-open"); $("#top").classList.remove("half"); });
+  // Phones: the bar opens the sheet halfway (saved places and shortcuts, no keyboard over them);
+  // a second tap on the search field brings it to the top and starts typing.
+  const setSheet = (state) => {
+    const top = $("#top");
+    if (state === "closed") { closeSearch(); return; }
+    top.classList.add("search-open");
+    top.classList.toggle("half", state === "half");
+  };
+  $(".search").addEventListener("click", () => {
+    if (!isMobile()) return;
+    const top = $("#top");
+    if (!top.classList.contains("search-open")) setSheet("half");
+    else if (top.classList.contains("half")) { setSheet("full"); $("#q").focus(); }
+  });
+  // The handle: tap toggles half and full, a swipe up goes to full, down goes half and then closed.
+  {
+    const grab = $("#top > .grab");
+    let y0 = null;
+    grab.addEventListener("touchstart", (e) => { y0 = e.touches[0].clientY; }, { passive: true });
+    grab.addEventListener("touchend", (e) => {
+      if (y0 == null) return;
+      const dy = e.changedTouches[0].clientY - y0, half = $("#top").classList.contains("half");
+      y0 = null;
+      if (Math.abs(dy) < 8) setSheet(half ? "full" : "half");
+      else if (dy < 0) setSheet("full");
+      else { $("#q").blur(); setSheet(half ? "closed" : "half"); }
+    });
+  }
   $("#q").addEventListener("input", syncQ);
   const closeSearch = () => {
     if (!$("#top").classList.contains("search-open")) return;
-    $("#top").classList.remove("search-open"); $("#q").blur();
+    $("#top").classList.remove("search-open", "half"); $("#q").blur();
   };
   $("#searchClose").addEventListener("click", () => { $("#q").value = ""; $("#q").dispatchEvent(new Event("input")); closeSearch(); });
   addEventListener("keydown", (e) => { if (e.key === "Escape") closeSearch(); });
