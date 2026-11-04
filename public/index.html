@@ -184,7 +184,30 @@
 
   /* weather (top left) and the map buttons (bottom right): small frosted pieces over the map */
   .glass { position: absolute; z-index: 999; background: var(--panel); border: 1px solid var(--panel-border); box-shadow: var(--shadow); backdrop-filter: blur(18px) saturate(140%); -webkit-backdrop-filter: blur(18px) saturate(140%); }
-  #wx { top: calc(12px + env(safe-area-inset-top)); left: 12px; display: inline-flex; align-items: center; gap: 5px; height: 36px; padding: 0 12px 0 10px; border-radius: 12px; font-size: 16px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  #topleft { position: absolute; z-index: 999; top: calc(12px + env(safe-area-inset-top)); left: 12px; display: flex; gap: 8px; pointer-events: none; }
+  #topleft > .glass { position: static; pointer-events: auto; }
+  #alertsAct[hidden] { display: none; }
+  #alertsAct.live b { color: #fff; background: var(--warn); border-radius: 999px; padding: 1px 8px; }
+  #alerts .list { padding: 6px 12px 10px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; }
+  .afilter { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 2px 14px 6px; font-size: 13px; font-weight: 700; color: var(--muted); }
+  .afilter[hidden] { display: none; }
+  .alert { background: var(--soft); border-radius: 16px; padding: 12px 14px; cursor: pointer; }
+  .alert.live { box-shadow: inset 3px 0 0 var(--warn); }
+  .alert .alines { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 7px; }
+  .alert .alines .badge { cursor: pointer; }
+  .alert .atitle { font-weight: 800; font-size: 15px; line-height: 1.3; }
+  .alert .awhen { color: var(--muted); font-size: 12px; font-weight: 700; margin-top: 3px; }
+  .alert .awhen .now { color: var(--warn); }
+  .alert .atext { margin-top: 8px; font-size: 13.5px; line-height: 1.45; color: var(--text); white-space: pre-line; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  .alert.open .atext { display: block; -webkit-line-clamp: unset; }
+  .alert .alinks { display: none; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .alert.open .alinks { display: flex; }
+  .alert .alinks a { font-size: 12.5px; font-weight: 800; color: var(--loc); background: var(--panel); border-radius: 999px; padding: 5px 11px; text-decoration: none; }
+  .alert .more { color: var(--loc); font-size: 12.5px; font-weight: 800; margin-top: 6px; }
+  .alert.open .more { display: none; }
+  .result .awarn, .pop .awarn { display: inline-flex; align-items: center; gap: 4px; color: var(--warn); font-weight: 800; font-size: 12px; background: color-mix(in srgb, var(--warn) 14%, transparent); border: none; border-radius: 999px; padding: 3px 9px; cursor: pointer; font-family: inherit; }
+  .pop .awarn { margin-top: 6px; }
+  #wx { display: inline-flex; align-items: center; gap: 5px; height: 36px; padding: 0 12px 0 10px; border-radius: 12px; font-size: 16px; font-weight: 800; font-variant-numeric: tabular-nums; }
   #wx[hidden] { display: none; }
   #wx #wxIcon { font-size: 18px; line-height: 1; }
   #ctrls { right: 12px; bottom: calc(84px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; border-radius: 16px; overflow: hidden; }
@@ -195,7 +218,7 @@
   #nearBtn.on svg { fill: var(--loc); }
   body:has(#side > .panel.on) #ctrls, body.dir-open #ctrls, body:has(#top.search-open) #ctrls { display: none; }
   @media (min-width: 720px) {
-    #wx { top: 22px; left: 392px; }
+    #topleft { top: 22px; left: 392px; }
     #ctrls { right: 16px; bottom: 32px; }
     body:has(#side > .panel.on) #ctrls { display: flex; right: 388px; }
     body:has(#top.search-open) #ctrls { display: flex; }
@@ -552,6 +575,7 @@
     <div class="group">
       <button class="act" id="nearAct"><span class="ic" style="--c:#3b82f6">📍</span><span class="lbl" data-i18n="nearMe">Near me</span><span class="chev">›</span></button>
       <button class="act" id="dirChip"><span class="ic" style="--c:#8b74d6">🧭</span><span class="lbl" data-i18n="directions">Directions</span><span class="chev">›</span></button>
+      <button class="act" id="alertsAct" hidden><span class="ic" style="--c:#f59e0b">⚠️</span><span class="lbl" data-i18n="alerts">Service alerts</span><b id="alertsN">0</b><span class="chev">›</span></button>
       <button class="act fav off" id="favChip"><span class="ic" style="--c:#e0304a">❤️</span><span class="lbl" data-i18n="onlyFavs">Only favourites</span><b id="nFav">0</b><span class="sw"></span></button>
       <button class="act stops" id="stopsChip"><span class="ic" style="--c:#b7a3e8">🚏</span><span class="lbl" data-i18n="stopsOnMap">Stops on the map</span><span class="sw"></span></button>
       <a class="act install" id="installChip" href="/install"><span class="ic" style="--c:#ffc247">📲</span><span class="lbl" data-i18n="installApp">Install app</span><span class="chev">›</span></a>
@@ -573,7 +597,9 @@
   </div>
 </section>
 
-<div id="wx" class="glass" hidden><span id="wxIcon"></span><b id="wxTemp"></b></div>
+<div id="topleft">
+  <div id="wx" class="glass" hidden><span id="wxIcon"></span><b id="wxTemp"></b></div>
+</div>
 
 <div id="ctrls" class="glass">
   <button id="themeBtn" title="Dark / light" aria-label="Dark / light">🌙</button>
@@ -621,6 +647,16 @@
       <div class="right"><span class="sub" id="routesUpdated"></span><button class="iconbtn" id="routesClose" title="Close">✕</button></div>
     </header>
     <div class="list" id="routesList"></div>
+  </aside>
+  <aside id="alerts" class="panel">
+    <div class="grab"></div>
+    <header>
+      <h2><span class="emo">⚠️</span><span data-i18n="alerts">Service alerts</span></h2>
+      <div class="right"><button class="iconbtn" id="alertsClose" title="Close">✕</button></div>
+    </header>
+    <div class="afilter" id="alertsFilter" hidden></div>
+    <div class="list" id="alertsList"></div>
+    <div class="hint" data-i18n="alertsSource">Source: Tallinna Transport</div>
   </aside>
   <aside id="near" class="panel">
     <div class="grab"></div>
@@ -684,7 +720,7 @@
       approaching: "approaching", movingAway: "moving away", nothingWithin: "🍃 Nothing within {r} right now.<br>Widen the radius or wait a moment.",
       noFavs: "No favourites yet. Tap ♡ on a stop or on a vehicle's card.", favStops: "❤️ Stops", favLines: "❤️ Lines", remove: "Remove",
       elronStation: "🚆 Elron train station", swap: "Swap start and destination",
-      recents: "Recents", clear: "Clear", saved: "Saved", explore: "Explore", vehicles: "Vehicles", onlyFavs: "Only favourites", stopsOnMap: "Stops on the map",
+      recents: "Recents", clear: "Clear", alerts: "Service alerts", alertsSource: "Source: Tallinna Transport. Notices are in Estonian.", noAlerts: "No service alerts right now.", alertN: "{n} alert", alertsN: "{n} alerts", allAlerts: "All alerts", alertsFor: "Alerts for line {line}", alertNow: "Now", alertFrom: "From {d}", showMore: "Show more", saved: "Saved", explore: "Explore", vehicles: "Vehicles", onlyFavs: "Only favourites", stopsOnMap: "Stops on the map",
       myRoutes: "My routes", saveRoute: "Save this route", routeName: "Name this route (e.g. Home → Work)", routeSaved: "Saved to My routes", routeExists: "Already in My routes",
       noRoutes: "No saved routes yet.<br>Plan a trip in Directions and tap ♡ to keep it here, with its next departures.", openDirections: "🧭 Plan a trip", flip: "Flip direction", noDeps: "No departures found right now.", nowDep: "now", checking: "Checking…", fromMeNoSave: "Choose a destination first.", waitingLocation: "📍 Waiting for your location…",
     },
@@ -714,7 +750,7 @@
       approaching: "läheneb", movingAway: "eemaldub", nothingWithin: "🍃 {r} raadiuses pole praegu midagi.<br>Suurenda raadiust või oota veidi.",
       noFavs: "Lemmikuid veel pole. Puuduta ♡ peatuse paneelil või sõiduki kaardil.", favStops: "❤️ Peatused", favLines: "❤️ Liinid", remove: "Eemalda",
       elronStation: "🚆 Elroni raudteejaam", swap: "Vaheta algus ja sihtkoht",
-      recents: "Hiljutised", clear: "Tühjenda", saved: "Salvestatud", explore: "Avasta", vehicles: "Sõidukid", onlyFavs: "Ainult lemmikud", stopsOnMap: "Peatused kaardil",
+      recents: "Hiljutised", clear: "Tühjenda", alerts: "Liiklusteated", alertsSource: "Allikas: Tallinna Transport.", noAlerts: "Praegu teateid ei ole.", alertN: "{n} teade", alertsN: "{n} teadet", allAlerts: "Kõik teated", alertsFor: "Liini {line} teated", alertNow: "Praegu", alertFrom: "Alates {d}", showMore: "Loe edasi", saved: "Salvestatud", explore: "Avasta", vehicles: "Sõidukid", onlyFavs: "Ainult lemmikud", stopsOnMap: "Peatused kaardil",
       myRoutes: "Minu teekonnad", saveRoute: "Salvesta see teekond", routeName: "Pane teekonnale nimi (nt Koju → Tööle)", routeSaved: "Salvestatud Minu teekondadesse", routeExists: "On juba Minu teekondades",
       noRoutes: "Salvestatud teekondi veel pole.<br>Planeeri teekond ja puuduta ♡, siis näed siin selle järgmisi väljumisi.", openDirections: "🧭 Planeeri teekond", flip: "Pööra suund", noDeps: "Praegu väljumisi ei leitud.", nowDep: "nüüd", checking: "Vaatan…", fromMeNoSave: "Vali kõigepealt sihtkoht.", waitingLocation: "📍 Ootan sinu asukohta…",
     },
@@ -955,10 +991,12 @@
         ${d.note ? `<div class="sm">⚠️ ${esc(d.note)}</div>` : ""}</div>
       </div>`;
     }
+    const nAl = alertsFor(d.type, d.line).length;
+    const alBtn = nAl ? `<button class="awarn" data-alert-type="${d.type}" data-alert-line="${esc(d.line)}">⚠️ ${t(nAl === 1 ? "alertN" : "alertsN", { n: nAl })}</button>` : "";
     return `<div class="pop">
       ${badge(d.type, d.line)}
       <div><div class="dest">→ ${esc(d.dest || (d.dir === "IB" ? t("inbound") : d.dir === "OB" ? t("outbound") : "—"))} <button class="favline ${isFavLine(d.type, d.line) ? "on" : ""}" data-type="${d.type}" data-line="${esc(d.line)}" title="Favourite line ${esc(d.line)}">${isFavLine(d.type, d.line) ? "♥" : "♡"}</button></div>
-      <div class="sm">${d.type === "county" ? t("countyLine", { n: esc(d.line) }) + (d.dir === "IB" ? " · " + t("inbound") : d.dir === "OB" ? " · " + t("outbound") : "") : d.type === "tartu" ? t("tartuLine", { n: esc(d.line) }) : TYPE_LABEL[d.type] + " · " + t("vehicle") + " " + esc(d.id)}${d.speed != null ? " · " + d.speed + " km/h" : ""}${d.lowFloor ? " · " + t("lowFloor") : ""}</div></div>
+      <div class="sm">${d.type === "county" ? t("countyLine", { n: esc(d.line) }) + (d.dir === "IB" ? " · " + t("inbound") : d.dir === "OB" ? " · " + t("outbound") : "") : d.type === "tartu" ? t("tartuLine", { n: esc(d.line) }) : TYPE_LABEL[d.type] + " · " + t("vehicle") + " " + esc(d.id)}${d.speed != null ? " · " + d.speed + " km/h" : ""}${d.lowFloor ? " · " + t("lowFloor") : ""}</div>${alBtn}</div>
     </div>`;
   }
 
@@ -1324,8 +1362,8 @@
   $("#stopsToggle").addEventListener("change", syncStopsChip);
   syncStopsChip();
   // Bottom sheets on phones: tap the header to expand, drag the handle/header down to close, up to expand.
-  const SHEET_CLOSE = { stop: () => closeStop(), near: () => closeNear(), dir: () => closeDirections(), routes: () => closeRoutes() };
-  for (const sel of ["#stop header", "#near header", "#dir header", "#routes header"]) {
+  const SHEET_CLOSE = { stop: () => closeStop(), near: () => closeNear(), dir: () => closeDirections(), routes: () => closeRoutes(), alerts: () => closeAlerts() };
+  for (const sel of ["#stop header", "#near header", "#dir header", "#routes header", "#alerts header"]) {
     const panel = $(sel).closest(".panel");
     let drag = null;
     $(sel).addEventListener("click", (e) => {
@@ -1544,6 +1582,87 @@
   $("#q").addEventListener("focus", renderFavList);
   ready.then(() => { ensureFavLayer(); applyFavMode(); renderFavList(); });
 
+  // ---------- Service alerts (Tallinna Transport notices) ----------
+  // A row in Explore (with the count) opens the list; a line's own alerts are one tap away from its
+  // vehicles and from line search. Lines you've favourited come first.
+  let alertList = [], alertFilter = null; // filter: { type, line }
+  const alertsFor = (type, line) => alertList.filter((a) => a.lines.some((l) => l.type === type && lineKey(l.line) === lineKey(line)));
+  const fmtAlertDay = (d) => String(d || "").split(" ")[0].replace(/\.(\d{4})$/, (m, y) => (y === String(new Date().getFullYear()) ? "" : m));
+  async function loadAlerts() {
+    try {
+      const j = await (await fetch("/api/alerts")).json();
+      alertList = j.alerts || [];
+    } catch { return; }
+    const n = alertList.length, live = alertList.some((a) => a.kind === "interruption");
+    $("#alertsAct").hidden = !n;
+    $("#alertsN").textContent = n;
+    $("#alertsAct").classList.toggle("live", live);
+    if ($("#alerts").classList.contains("on")) renderAlerts();
+  }
+  function renderAlerts() {
+    const fav = (a) => a.lines.some((l) => isFavLine(l.type, l.line));
+    let list = alertFilter ? alertsFor(alertFilter.type, alertFilter.line) : alertList.slice();
+    list = list.map((a, i) => ({ a, i })).sort((x, y) => (fav(y.a) - fav(x.a)) || (x.i - y.i)).map((x) => x.a);
+    const f = $("#alertsFilter");
+    f.hidden = !alertFilter;
+    if (alertFilter) f.innerHTML = `<span>${t("alertsFor", { line: esc(alertFilter.line) })}</span><button class="linkbtn" id="alertsAll">${t("allAlerts")} (${alertList.length})</button>`;
+    $("#alertsAll")?.addEventListener("click", () => { alertFilter = null; renderAlerts(); });
+    if (!list.length) { $("#alertsList").innerHTML = `<div class="empty">${t("noAlerts")}</div>`; return; }
+    $("#alertsList").innerHTML = list.map((a, i) => {
+      const seen = new Set(), lines = a.lines.filter((l) => { const k = l.type + ":" + l.line; if (seen.has(k)) return false; seen.add(k); return true; });
+      const when = a.kind === "interruption" ? `<span class="now">${t("alertNow")}</span>${a.to ? " · –" + esc(a.to.split(" ").pop()) : ""}`
+        : a.to ? `${esc(fmtAlertDay(a.from))} – ${esc(fmtAlertDay(a.to))}` : a.from ? t("alertFrom", { d: esc(fmtAlertDay(a.from)) }) : "";
+      const linkSeen = new Map();
+      const links = a.links.filter((l) => !/transport\.tallinn\.ee\/?$/.test(l.href)).filter((l) => { if (linkSeen.has(l.href)) return false; linkSeen.set(l.href, 1); return true; });
+      const linkHtml = links.map((l, k) => `<a href="${esc(l.href)}" target="_blank" rel="noopener">${/skeem/i.test(l.label) ? "🗺️ " + esc(l.label) + (links.length > 1 ? " " + (k + 1) : "") : "🔗 " + esc(l.label)}</a>`).join("");
+      return `<div class="alert ${a.kind === "interruption" ? "live" : ""}" data-ai="${i}">
+        ${lines.length ? `<div class="alines">${lines.map((l) => `<span data-al-type="${l.type}" data-al-line="${esc(l.line)}">${badge(l.type, l.line)}</span>`).join("")}${fav(a) ? ' <span class="favline on">♥</span>' : ""}</div>` : ""}
+        <div class="atitle">${esc(a.title)}</div>
+        ${when ? `<div class="awhen">${when}</div>` : ""}
+        ${a.text && a.text !== a.title ? `<div class="atext">${esc(a.text)}</div>${a.text.length > 150 || a.links.length ? `<div class="more">${t("showMore")}</div>` : ""}` : ""}
+        ${linkHtml ? `<div class="alinks">${linkHtml}</div>` : ""}
+      </div>`;
+    }).join("");
+  }
+  function openAlerts(filter = null) {
+    const on = (id) => $(id).classList.contains("on");
+    if (on("#stop")) closeStop();
+    if (on("#near")) closeNear();
+    if (on("#routes")) closeRoutes();
+    if (on("#dir")) closeDirections();
+    closeSearch();
+    alertFilter = filter;
+    $("#alerts").classList.add("on"); $("#alerts").classList.remove("tall");
+    renderAlerts(); fitSheet();
+  }
+  function closeAlerts() {
+    if (!$("#alerts").classList.contains("on")) return;
+    $("#alerts").classList.remove("on", "tall"); fitSheet();
+  }
+  $("#alertsAct").addEventListener("click", () => openAlerts());
+  $("#alertsClose").addEventListener("click", closeAlerts);
+  $("#alertsList").addEventListener("click", (e) => {
+    if (e.target.closest("a")) return;
+    const b = e.target.closest("[data-al-line]");
+    if (b) { // a line badge: show that line on the map
+      closeAlerts();
+      $("#q").value = b.dataset.alLine; $("#q").dispatchEvent(new Event("input"));
+      const hit = lineResults().find((x) => x.k === lineKeyOf(b.dataset.alType, b.dataset.alLine));
+      if (hit) showLine(hit);
+      return;
+    }
+    e.target.closest(".alert")?.classList.toggle("open");
+  });
+  // ⚠️ buttons on a vehicle popup or a line result open that line's alerts.
+  document.addEventListener("click", (e) => {
+    const b = e.target.closest(".awarn[data-alert-line]");
+    if (!b) return;
+    e.stopPropagation();
+    openAlerts({ type: b.dataset.alertType, line: b.dataset.alertLine });
+  }, true);
+  loadAlerts();
+  setInterval(loadAlerts, 5 * 60000);
+
   // ---------- Recents: the last stops, places and lines picked from search, newest first ----------
   let recents = [];
   try { recents = JSON.parse(localStorage.getItem("tl.recents") || "[]").filter((r) => r && r.kind); } catch {}
@@ -1665,7 +1784,7 @@
     return lines.map((r, i) => {
       const dests = [...r.dests].sort((a, b) => b[1] - a[1]).slice(0, 2).map(([d]) => esc(d)).join(" · ");
       return `<div class="result line" data-li="${i}">
-        <div class="name">${badge(r.type, r.line)} ${TYPE_LABEL[r.type]} <small>${t("lineLive", { n: r.n })}</small></div>
+        <div class="name">${badge(r.type, r.line)} ${TYPE_LABEL[r.type]} <small>${t("lineLive", { n: r.n })}</small>${(() => { const n = alertsFor(r.type, r.line).length; return n ? ` <button class="awarn" data-alert-type="${r.type}" data-alert-line="${esc(r.line)}">⚠️ ${t(n === 1 ? "alertN" : "alertsN", { n })}</button>` : ""; })()}</div>
         ${dests ? `<div class="dests">→ ${dests}</div>` : ""}
       </div>`;
     }).join("");
@@ -1684,7 +1803,7 @@
     map.fitBounds(b, { padding: pad, maxZoom: 15, duration: 700 });
   }
   function bindLineResults(box, lines) {
-    box.querySelectorAll(".result.line").forEach((row) => row.addEventListener("click", () => showLine(lines[Number(row.dataset.li)])));
+    box.querySelectorAll(".result.line").forEach((row) => row.addEventListener("click", (e) => { if (e.target.closest(".awarn")) return; showLine(lines[Number(row.dataset.li)]); }));
   }
   // A stop or place picked from the results has done its job: the bar starts empty next time.
   // (A line number stays: it is the filter on the map.)
@@ -1787,6 +1906,7 @@
     syncStopFav();
   });
   function openStop(s, onlySiri = null) {
+    closeAlerts();
     if (!s.train && s.siri && !stops.includes(s)) { // favourite platform: find the real stop by id
       const real = stops.find((o) => o.siri === s.siri);
       if (real) s = real;
@@ -1969,6 +2089,7 @@
     $("#dirTo").value = dir.to ? dir.to.name : "";
   }
   function openDirections(to, from) {
+    closeAlerts();
     if (to !== undefined) dir.to = to;
     if (from !== undefined) dir.from = from;
     syncDirFields();
@@ -2177,7 +2298,7 @@
 
   let routesTimer = null, routesRetry = null, routesSeq = 0;
   function openRoutes() {
-    closeStop(); closeNear();
+    closeStop(); closeNear(); closeAlerts();
     $("#routes").classList.add("on"); document.body.classList.add("routes-open"); fitSheet();
     closeSearch();
     renderRoutes();
@@ -2517,6 +2638,7 @@
     for (const id of ["me-fill", "me-line"]) if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", on);
   }
   function openNear(fly) {
+    closeAlerts();
     $("#near").classList.add("on"); $("#nearBtn").classList.add("on"); $("#near").classList.remove("tall");
     syncRadiusRing();
     if (fly && me) map.flyTo({ center: [me.lon, me.lat], zoom: Math.max(map.getZoom(), 16), duration: 800, padding: { top: 0, bottom: sheetPad(), left: 0, right: 0 } });
