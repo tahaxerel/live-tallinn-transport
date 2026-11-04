@@ -302,7 +302,7 @@
   #side > .panel { width: 100%; display: none; flex-direction: column; overflow: hidden; min-height: 0; }
   #side > .panel.on { display: flex; }
   #near.on { max-height: 46vh; }
-  #stop.on, #routes.on { max-height: 60vh; }
+  #stop.on, #routes.on, #alerts.on, #trip.on { max-height: 60vh; }
   .rt { padding: 10px 10px 8px; border-radius: 16px; display: grid; gap: 6px; }
   .rt + .rt { margin-top: 2px; }
   .rt:hover { background: var(--soft); }
@@ -320,7 +320,7 @@
   #dirSave.on { color: #e5484d; }
   #dirSave:disabled { opacity: .35; cursor: default; }
   .grab { display: none; }
-  @media (min-width: 720px) { #near.on, #stop.on { max-height: 100%; flex: 0 1 auto; } }
+  @media (min-width: 720px) { #near.on, #stop.on, #alerts.on, #trip.on { max-height: 100%; flex: 0 1 auto; } }
   @media (max-width: 719px) {
     #side { left: 0; right: 0; bottom: 0; max-height: 100vh; gap: 0; }
     .maplibregl-ctrl-attrib.maplibregl-compact { border-radius: 999px; margin: 0 6px 6px 0 !important; }
@@ -328,9 +328,9 @@
     #side > .panel.dragging { transition: none; }
     /* iOS zooms into any field under 16px; keep phones at 16px and desktops compact. */
     #top .search input, .fields input { font-size: 16px; }
-    #stop.on, #routes.on { max-height: 52vh; }
+    #stop.on, #routes.on, #alerts.on, #trip.on { max-height: 52vh; }
     #near.on { max-height: 44vh; }
-    #near.on.tall, #stop.on.tall, #routes.on.tall { max-height: 90vh; }
+    #near.on.tall, #stop.on.tall, #routes.on.tall, #alerts.on.tall, #trip.on.tall { max-height: 90vh; }
     body.routes-open #near { display: none !important; }
     .grab { display: block; width: 40px; height: 5px; border-radius: 3px; background: var(--knob); margin: 8px auto 0; flex: none; }
     .panel header { padding-top: 8px; cursor: pointer; }
@@ -539,8 +539,28 @@
   .maplibregl-popup-anchor-right .maplibregl-popup-tip { border-left-color: var(--paper); }
   .pop { display: flex; gap: 10px; align-items: center; }
   .pop > div { min-width: 0; }
+  .pop:has(.nexts:not(:empty)) { align-items: flex-start; }
   .pop .dest { font-weight: 900; font-size: 14px; }
   .pop .sm { font-size: 12px; font-weight: 600; color: var(--muted); }
+  /* the tapped vehicle's next stops, under its line and direction */
+  .pop .nexts:empty { display: none; }
+  .pop .nexts { margin-top: 8px; padding-top: 7px; border-top: 1px solid var(--panel-border); min-width: 190px; }
+  .nexts .nh { font-size: 11px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); margin-bottom: 3px; }
+  .nexts .nl.all { max-height: 210px; overflow-y: auto; scrollbar-width: thin; }
+  .nexts .ns { display: flex; align-items: center; gap: 8px; padding: 3px 0; font-size: 12.5px; }
+  .nexts .ns i { width: 9px; height: 9px; flex: none; border-radius: 50%; box-shadow: inset 0 0 0 2px var(--c); }
+  .nexts .ns.next i { background: var(--c); }
+  .nexts .ns.past { opacity: .45; }
+  .nexts .ns .n { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 700; }
+  .nexts .ns.next .n { font-weight: 900; }
+  .nexts .ns .t { color: var(--muted); font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  #trip h2 { gap: 8px; }
+  #trip .list { padding: 4px 16px 12px; overflow-y: auto; }
+  #trip .ns { font-size: 14.5px; padding: 9px 0; gap: 12px; border-bottom: 1px solid var(--panel-border); }
+  #trip .ns:last-child { border-bottom: none; }
+  #trip .ns i { width: 11px; height: 11px; }
+  #trip .ns.next { background: color-mix(in srgb, var(--c) 14%, transparent); margin: 0 -10px; padding: 9px 10px; border-radius: 12px; border-bottom-color: transparent; }
+  .nexts .nmore { background: none; border: none; padding: 4px 0 0; font: inherit; font-size: 12px; font-weight: 800; color: var(--loc); cursor: pointer; }
   .stoppop .maplibregl-popup-content { padding: 6px 11px; font-size: 12px; font-weight: 800; border-radius: 999px; }
 </style>
 <!-- Vercel Web Analytics: cookieless page-view counts, enabled in the Vercel dashboard -->
@@ -648,6 +668,14 @@
     </header>
     <div class="list" id="routesList"></div>
   </aside>
+  <aside id="trip" class="panel">
+    <div class="grab"></div>
+    <header>
+      <h2><span id="tripBadge"></span><span id="tripTitle"></span></h2>
+      <div class="right"><button class="iconbtn" id="tripClose" title="Close">✕</button></div>
+    </header>
+    <div class="list nexts" id="tripList"></div>
+  </aside>
   <aside id="alerts" class="panel">
     <div class="grab"></div>
     <header>
@@ -720,7 +748,7 @@
       approaching: "approaching", movingAway: "moving away", nothingWithin: "🍃 Nothing within {r} right now.<br>Widen the radius or wait a moment.",
       noFavs: "No favourites yet. Tap ♡ on a stop or on a vehicle's card.", favStops: "❤️ Stops", favLines: "❤️ Lines", remove: "Remove",
       elronStation: "🚆 Elron train station", swap: "Swap start and destination",
-      recents: "Recents", clear: "Clear", alerts: "Service alerts", alertsSource: "Source: Tallinna Transport. Notices are in Estonian.", noAlerts: "No service alerts right now.", alertN: "{n} alert", alertsN: "{n} alerts", allAlerts: "All alerts", alertsFor: "Alerts for line {line}", alertNow: "Now", alertFrom: "From {d}", showMore: "Show more", saved: "Saved", explore: "Explore", vehicles: "Vehicles", onlyFavs: "Only favourites", stopsOnMap: "Stops on the map",
+      nextStops: "Next stops", allStops: "All stops ({n})", hideStops: "Fewer stops", minShort: "{n} min", recents: "Recents", clear: "Clear", alerts: "Service alerts", alertsSource: "Source: Tallinna Transport. Notices are in Estonian.", noAlerts: "No service alerts right now.", alertN: "{n} alert", alertsN: "{n} alerts", allAlerts: "All alerts", alertsFor: "Alerts for line {line}", alertNow: "Now", alertFrom: "From {d}", showMore: "Show more", saved: "Saved", explore: "Explore", vehicles: "Vehicles", onlyFavs: "Only favourites", stopsOnMap: "Stops on the map",
       myRoutes: "My routes", saveRoute: "Save this route", routeName: "Name this route (e.g. Home → Work)", routeSaved: "Saved to My routes", routeExists: "Already in My routes",
       noRoutes: "No saved routes yet.<br>Plan a trip in Directions and tap ♡ to keep it here, with its next departures.", openDirections: "🧭 Plan a trip", flip: "Flip direction", noDeps: "No departures found right now.", nowDep: "now", checking: "Checking…", fromMeNoSave: "Choose a destination first.", waitingLocation: "📍 Waiting for your location…",
     },
@@ -750,7 +778,7 @@
       approaching: "läheneb", movingAway: "eemaldub", nothingWithin: "🍃 {r} raadiuses pole praegu midagi.<br>Suurenda raadiust või oota veidi.",
       noFavs: "Lemmikuid veel pole. Puuduta ♡ peatuse paneelil või sõiduki kaardil.", favStops: "❤️ Peatused", favLines: "❤️ Liinid", remove: "Eemalda",
       elronStation: "🚆 Elroni raudteejaam", swap: "Vaheta algus ja sihtkoht",
-      recents: "Hiljutised", clear: "Tühjenda", alerts: "Liiklusteated", alertsSource: "Allikas: Tallinna Transport.", noAlerts: "Praegu teateid ei ole.", alertN: "{n} teade", alertsN: "{n} teadet", allAlerts: "Kõik teated", alertsFor: "Liini {line} teated", alertNow: "Praegu", alertFrom: "Alates {d}", showMore: "Loe edasi", saved: "Salvestatud", explore: "Avasta", vehicles: "Sõidukid", onlyFavs: "Ainult lemmikud", stopsOnMap: "Peatused kaardil",
+      nextStops: "Järgmised peatused", allStops: "Kõik peatused ({n})", hideStops: "Vähem peatusi", minShort: "{n} min", recents: "Hiljutised", clear: "Tühjenda", alerts: "Liiklusteated", alertsSource: "Allikas: Tallinna Transport.", noAlerts: "Praegu teateid ei ole.", alertN: "{n} teade", alertsN: "{n} teadet", allAlerts: "Kõik teated", alertsFor: "Liini {line} teated", alertNow: "Praegu", alertFrom: "Alates {d}", showMore: "Loe edasi", saved: "Salvestatud", explore: "Avasta", vehicles: "Sõidukid", onlyFavs: "Ainult lemmikud", stopsOnMap: "Peatused kaardil",
       myRoutes: "Minu teekonnad", saveRoute: "Salvesta see teekond", routeName: "Pane teekonnale nimi (nt Koju → Tööle)", routeSaved: "Salvestatud Minu teekondadesse", routeExists: "On juba Minu teekondades",
       noRoutes: "Salvestatud teekondi veel pole.<br>Planeeri teekond ja puuduta ♡, siis näed siin selle järgmisi väljumisi.", openDirections: "🧭 Planeeri teekond", flip: "Pööra suund", noDeps: "Praegu väljumisi ei leitud.", nowDep: "nüüd", checking: "Vaatan…", fromMeNoSave: "Vali kõigepealt sihtkoht.", waitingLocation: "📍 Ootan sinu asukohta…",
     },
@@ -988,7 +1016,7 @@
         <div><div class="dest">${esc(d.route)} <button class="favline ${isFavLine(d.type, d.route) ? "on" : ""}" data-type="${d.type}" data-line="${esc(d.route)}" title="Favourite this train route">${isFavLine(d.type, d.route) ? "♥" : "♡"}</button></div>
         <div class="sm">${t("trainN", { n: esc(d.line) })}${d.track ? " · 🚉 " + t("track", { n: d.track }) : ""} · ${d.speed} km/h · ${delay}</div>
         <div class="sm">${t("lastStop")}: ${esc(d.lastStop || "—")} · ${esc(d.start)}–${esc(d.end)}</div>
-        ${d.note ? `<div class="sm">⚠️ ${esc(d.note)}</div>` : ""}</div>
+        ${d.note ? `<div class="sm">⚠️ ${esc(d.note)}</div>` : ""}<div class="nexts"></div></div>
       </div>`;
     }
     const nAl = alertsFor(d.type, d.line).length;
@@ -996,7 +1024,7 @@
     return `<div class="pop">
       ${badge(d.type, d.line)}
       <div><div class="dest">→ ${esc(d.dest || (d.dir === "IB" ? t("inbound") : d.dir === "OB" ? t("outbound") : "—"))} <button class="favline ${isFavLine(d.type, d.line) ? "on" : ""}" data-type="${d.type}" data-line="${esc(d.line)}" title="Favourite line ${esc(d.line)}">${isFavLine(d.type, d.line) ? "♥" : "♡"}</button></div>
-      <div class="sm">${d.type === "county" ? t("countyLine", { n: esc(d.line) }) + (d.dir === "IB" ? " · " + t("inbound") : d.dir === "OB" ? " · " + t("outbound") : "") : d.type === "tartu" ? t("tartuLine", { n: esc(d.line) }) : TYPE_LABEL[d.type] + " · " + t("vehicle") + " " + esc(d.id)}${d.speed != null ? " · " + d.speed + " km/h" : ""}${d.lowFloor ? " · " + t("lowFloor") : ""}</div>${alBtn}</div>
+      <div class="sm">${d.type === "county" ? t("countyLine", { n: esc(d.line) }) + (d.dir === "IB" ? " · " + t("inbound") : d.dir === "OB" ? " · " + t("outbound") : "") : d.type === "tartu" ? t("tartuLine", { n: esc(d.line) }) : TYPE_LABEL[d.type] + " · " + t("vehicle") + " " + esc(d.id)}${d.speed != null ? " · " + d.speed + " km/h" : ""}${d.lowFloor ? " · " + t("lowFloor") : ""}</div>${alBtn}<div class="nexts"></div></div>
     </div>`;
   }
 
@@ -1208,8 +1236,80 @@
     }
     return best;
   }
+  // Next stops in the vehicle's popup. Times come from the timetable, shifted to where the vehicle really is:
+  // the scheduled time at its spot (between the stops either side) is "now", so a late bus shows late times.
+  function stopTimes() {
+    const v = vroute && vehicles.get(vroute.id);
+    const st = vroute ? vroute.stops : [], dv = vroute ? vroute.dv : null;
+    if (!v || dv == null || !st.length) return null;
+    const T = (s) => { const x = Date.parse(s.dep || s.arr); return isNaN(x) ? null : x; };
+    let pi = -1;
+    for (let k = 0; k < st.length; k++) if (st[k].d <= dv + 15) pi = k;
+    if (pi >= st.length - 1) return null; // at the last stop
+    const a = st[pi], b = st[pi + 1];
+    let Tv = null;
+    if (a && T(a) != null && T(b) != null && b.d > a.d) Tv = T(a) + (T(b) - T(a)) * Math.min(1, Math.max(0, (dv - a.d) / (b.d - a.d)));
+    else if (T(b) != null) Tv = T(b) - ((b.d - dv) / (v.mps > 1 ? v.mps : 6)) * 1000;
+    const now = Date.now();
+    return { pi, list: st.map((s, k) => {
+      const ts = T(s), eta = Tv != null && ts != null ? now + (ts - Tv) : null;
+      return { name: s.name, eta, min: eta != null ? Math.round((eta - now) / 60000) : null, cls: k <= pi ? "past" : k === pi + 1 ? "next" : "" };
+    }) };
+  }
+  const stopRow = (r) => {
+    const time = r.eta != null && r.cls !== "past" ? `<span class="t">${new Date(r.eta).toLocaleTimeString("et-EE", { hour: "2-digit", minute: "2-digit" })} · ${r.min <= 0 ? t("nowDep") : t("minShort", { n: r.min })}</span>` : "";
+    return `<div class="ns ${r.cls}"><i></i><span class="n">${esc(r.name)}</span>${time}</div>`;
+  };
+  // Only rewrite when something changed, so a scrolled list stays where it is.
+  const setIfChanged = (el, html) => { if (el.dataset.sig === html) return false; el.dataset.sig = html; el.innerHTML = html; return true; };
+  function renderNextStops() {
+    const m = stopTimes();
+    const v = vroute && vehicles.get(vroute.id);
+    const box = v && v.popup.isOpen() && v.popup.getElement()?.querySelector(".nexts");
+    if (box) {
+      box.style.setProperty("--c", vroute.color);
+      setIfChanged(box, !m ? "" : `<div class="nh">${t("nextStops")}</div><div class="nl">${m.list.slice(m.pi + 1, m.pi + 4).map(stopRow).join("")}</div>${m.list.length > 3 ? `<button class="nmore">${t("allStops", { n: m.list.length })}</button>` : ""}`);
+    }
+    if ($("#trip").classList.contains("on")) {
+      const list = $("#tripList");
+      list.style.setProperty("--c", vroute ? vroute.color : "var(--muted)");
+      const first = !list.dataset.sig;
+      if (setIfChanged(list, m ? m.list.map(stopRow).join("") : "") && first) {
+        const n = list.querySelector(".ns.next");
+        if (n) list.scrollTop = Math.max(0, n.offsetTop - list.offsetTop - 90);
+      }
+    }
+  }
+  // The full stop list of the tapped vehicle, in a sheet like the stop card.
+  function openTrip() {
+    const v = vroute && vehicles.get(vroute.id);
+    if (!v) return;
+    const on = (id) => $(id).classList.contains("on");
+    if (on("#stop")) closeStop();
+    if (on("#near")) closeNear();
+    if (on("#routes")) closeRoutes();
+    if (on("#dir")) closeDirections();
+    closeAlerts(); closeSearch();
+    if (v.popup.isOpen()) v.m.togglePopup();
+    $("#tripBadge").innerHTML = badge(v.data.type, v.data.label || v.data.line);
+    $("#tripTitle").textContent = "→ " + (v.data.dest || v.data.route || "");
+    delete $("#tripList").dataset.sig;
+    $("#trip").classList.add("on"); $("#trip").classList.remove("tall");
+    renderNextStops(); fitSheet();
+  }
+  function closeTrip() {
+    if (!$("#trip").classList.contains("on")) return;
+    $("#trip").classList.remove("on", "tall"); fitSheet();
+  }
+  $("#tripClose").addEventListener("click", closeTrip);
+  document.addEventListener("click", (e) => {
+    if (!e.target.closest(".nexts .nmore") || !vroute) return;
+    e.stopPropagation();
+    openTrip();
+  }, true);
   function clearVRoute() {
     vroute = null;
+    closeTrip();
     clearInterval(vrouteTimer); vrouteTimer = null;
     if (!vrouteReady) return;
     const empty = { type: "FeatureCollection", features: [] };
@@ -1228,7 +1328,11 @@
       if (!j.found || j.path.length < 2 || selVeh !== id) return;
       await ensureVRouteLayers();
       if (selVeh !== id) return;
-      vroute = { id, path: j.path, color: MODE_COLOR()[d.type], at: -1, stops: j.stops.map((s) => ({ ...s, i: onPath(j.path, s.lon, s.lat, null).i })) };
+      const cum = [0];
+      for (let k = 1; k < j.path.length; k++) cum.push(cum[k - 1] + metersBetween(j.path[k - 1], j.path[k]));
+      const along = (o) => cum[o.i] + metersBetween(j.path[o.i], o.p);
+      vroute = { id, path: j.path, cum, color: MODE_COLOR()[d.type], at: -1, dv: null, all: false,
+        stops: j.stops.map((s) => { const o = onPath(j.path, s.lon, s.lat, null); return { ...s, i: o.i, d: along(o) }; }) };
       renderVRoute();
       vrouteTimer = setInterval(renderVRoute, 1000); // follow the marker as it glides along
     } catch {}
@@ -1239,11 +1343,12 @@
     let ahead = path, behind = [];
     if (v && v.shown) {
       const ll = v.m.getLngLat(), s = onPath(path, ll.lng, ll.lat, v.data.heading ?? null);
-      if (s.d < 250) { behind = [...path.slice(0, s.i + 1), s.p]; ahead = [s.p, ...path.slice(s.i + 1)]; vroute.at = s.i; }
+      if (s.d < 250) { behind = [...path.slice(0, s.i + 1), s.p]; ahead = [s.p, ...path.slice(s.i + 1)]; vroute.at = s.i; vroute.dv = vroute.cum[s.i] + metersBetween(path[s.i], s.p); }
     }
     const line = (c, a) => ({ type: "Feature", properties: { color, ahead: a }, geometry: { type: "LineString", coordinates: c } });
     map.getSource("vroute")?.setData({ type: "FeatureCollection", features: [behind.length > 1 && line(behind, false), line(ahead, true)].filter(Boolean) });
     map.getSource("vroute-stops")?.setData({ type: "FeatureCollection", features: vroute.stops.map((s) => ({ type: "Feature", properties: { color, name: s.name, ahead: s.i >= vroute.at }, geometry: { type: "Point", coordinates: [s.lon, s.lat] } })) });
+    renderNextStops();
     // Follow the theme (the layers outlive a light/dark swap).
     map.setPaintProperty("vroute-casing", "line-color", cssVar("--surface"));
     map.setPaintProperty("vroute-stops", "circle-color", cssVar("--surface"));
@@ -1362,8 +1467,8 @@
   $("#stopsToggle").addEventListener("change", syncStopsChip);
   syncStopsChip();
   // Bottom sheets on phones: tap the header to expand, drag the handle/header down to close, up to expand.
-  const SHEET_CLOSE = { stop: () => closeStop(), near: () => closeNear(), dir: () => closeDirections(), routes: () => closeRoutes(), alerts: () => closeAlerts() };
-  for (const sel of ["#stop header", "#near header", "#dir header", "#routes header", "#alerts header"]) {
+  const SHEET_CLOSE = { stop: () => closeStop(), near: () => closeNear(), dir: () => closeDirections(), routes: () => closeRoutes(), alerts: () => closeAlerts(), trip: () => closeTrip() };
+  for (const sel of ["#stop header", "#near header", "#dir header", "#routes header", "#alerts header", "#trip header"]) {
     const panel = $(sel).closest(".panel");
     let drag = null;
     $(sel).addEventListener("click", (e) => {
@@ -1630,7 +1735,7 @@
     if (on("#near")) closeNear();
     if (on("#routes")) closeRoutes();
     if (on("#dir")) closeDirections();
-    closeSearch();
+    closeTrip(); closeSearch();
     alertFilter = filter;
     $("#alerts").classList.add("on"); $("#alerts").classList.remove("tall");
     renderAlerts(); fitSheet();
@@ -1906,7 +2011,7 @@
     syncStopFav();
   });
   function openStop(s, onlySiri = null) {
-    closeAlerts();
+    closeAlerts(); closeTrip();
     if (!s.train && s.siri && !stops.includes(s)) { // favourite platform: find the real stop by id
       const real = stops.find((o) => o.siri === s.siri);
       if (real) s = real;
@@ -2089,7 +2194,7 @@
     $("#dirTo").value = dir.to ? dir.to.name : "";
   }
   function openDirections(to, from) {
-    closeAlerts();
+    closeAlerts(); closeTrip();
     if (to !== undefined) dir.to = to;
     if (from !== undefined) dir.from = from;
     syncDirFields();
@@ -2298,7 +2403,7 @@
 
   let routesTimer = null, routesRetry = null, routesSeq = 0;
   function openRoutes() {
-    closeStop(); closeNear(); closeAlerts();
+    closeStop(); closeNear(); closeAlerts(); closeTrip();
     $("#routes").classList.add("on"); document.body.classList.add("routes-open"); fitSheet();
     closeSearch();
     renderRoutes();
@@ -2638,7 +2743,7 @@
     for (const id of ["me-fill", "me-line"]) if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", on);
   }
   function openNear(fly) {
-    closeAlerts();
+    closeAlerts(); closeTrip();
     $("#near").classList.add("on"); $("#nearBtn").classList.add("on"); $("#near").classList.remove("tall");
     syncRadiusRing();
     if (fly && me) map.flyTo({ center: [me.lon, me.lat], zoom: Math.max(map.getZoom(), 16), duration: 800, padding: { top: 0, bottom: sheetPad(), left: 0, right: 0 } });
