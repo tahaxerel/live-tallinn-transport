@@ -1964,6 +1964,7 @@
   // ---------- Share links: a stop, a planned trip or a vehicle, opened straight from the link ----------
   // The phone's own share sheet where there is one, else the link is copied. A trip from "Your location"
   // shares only its destination: whoever opens it gets directions from where they are, not from you.
+  let linkOpened = false;
   let toastTimer = null;
   function toast(msg) { const el = $("#toast"); el.textContent = msg; el.classList.add("on"); clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove("on"), 2200); }
   const ll5 = (lat, lon) => `${(+lat).toFixed(5)},${(+lon).toFixed(5)}`;
@@ -2003,6 +2004,7 @@
     const pt = (s) => { const m = /^(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)$/.exec(s || ""); return m ? { lat: +m[1], lon: +m[2] } : null; };
     const keys = ["s", "at", "p", "tr", "to", "tll", "from", "fll", "v"];
     if (!keys.some((k) => q.has(k))) return;
+    linkOpened = true;
     const rest = new URLSearchParams(location.search); keys.forEach((k) => rest.delete(k));
     history.replaceState(null, "", location.pathname + (rest.toString() ? "?" + rest : "")); // a reload shouldn't reopen it
     await ready;
@@ -2973,6 +2975,7 @@
   const EMPTY = { type: "FeatureCollection", features: [] };
   async function setMe(lat, lon, fly, accuracy = null) {
     await ready;
+    const hadStart = !!placeFromMe();
     me = { lat, lon };
     if (!meMarker) {
       meEl = document.createElement("div"); meEl.className = "me";
@@ -2992,9 +2995,12 @@
     // GPS accuracy ring (Google-style), only for real fixes and only when it is meaningful.
     map.getSource("me-acc").setData(accuracy && accuracy > 12 && accuracy < 800 ? circlePolygon(lat, lon, accuracy) : EMPTY);
     syncRadiusRing();
-    if (fly) map.flyTo({ center: [lon, lat], zoom: Math.max(map.getZoom(), 16), duration: 900 });
+    // A shared link opened the app somewhere: the first fix shouldn't drag the map away from it.
+    if (fly && !linkOpened) map.flyTo({ center: [lon, lat], zoom: Math.max(map.getZoom(), 16), duration: 900 });
     renderNear();
     updateRide();
+    // Directions waiting for a start (opened before the first fix, e.g. from a shared link): start here now.
+    if (!hadStart && placeFromMe() && !dir.from && $("#dir").classList.contains("on")) { syncDirFields(); planNow(); }
   }
   // The dashed search radius is only meaningful while the "Passing by" list is open.
   function syncRadiusRing() {
