@@ -120,74 +120,110 @@
     box-shadow: var(--shadow);
     pointer-events: auto;
   }
+  /* ---------- Home: search bar that opens into a sheet (Apple Maps style) ---------- */
   #top {
-    position: absolute; z-index: 1000;
-    top: 16px; left: 16px; right: 16px;
-    padding: 16px 18px 14px;
-    display: flex; flex-direction: column; gap: 12px;
+    position: absolute; z-index: 1000; display: flex; flex-direction: column; overflow: hidden;
+    top: 16px; left: 16px; width: 360px; padding: 8px; gap: 0; border-radius: 26px;
   }
-  @media (min-width: 720px) { #top { right: auto; width: 360px; } #searchBtn { display: none; } }
-  @media (max-width: 719px) {
-    #top { top: calc(10px + env(safe-area-inset-top)); left: 10px; right: 10px; padding: 10px 12px 10px; gap: 8px; }
-    #searchBtn { display: none !important; }
-    #top .row { display: none; }
-    #top .chips { display: none; }
-    #top.search-open .chips { display: flex; }
-    #top:not(.search-open) .results { display: none; }
-    #top .chips { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin: 0 -12px; padding: 0 12px 2px; gap: 6px; -webkit-overflow-scrolling: touch; }
-    #top .chips::-webkit-scrollbar { display: none; }
-    #top .chip { flex: none; min-height: 0; height: 26px; padding: 0 9px 0 7px; font-size: 11px; gap: 4px; box-shadow: none; }
-    #top .chip .emo { font-size: 13px; }
-    #top .search input { padding: 9px 12px 9px 36px; font-size: 14px; }
-    .brand h1 { font-size: 16px; }
-    .brand h1 .logo { font-size: 19px; }
-  }
-  .langbtn { background: var(--soft); border: none; height: 28px; padding: 0 9px; border-radius: 999px; font: inherit; font-size: 11px; font-weight: 900; letter-spacing: .06em; color: var(--muted); cursor: pointer; }
+  #top > .grab { display: none; }
+  .searchrow { display: flex; align-items: center; gap: 8px; flex: none; }
+  .search { position: relative; flex: 1; min-width: 0; }
+  .search .ico { position: absolute; left: 14px; top: 50%; width: 18px; height: 18px; transform: translateY(-50%); fill: none; stroke: var(--muted); stroke-width: 2.4; stroke-linecap: round; pointer-events: none; }
+  #top .live { flex: none; padding: 0; width: 36px; height: 36px; justify-content: center; }
+  #top .live #liveText { display: none; }
+  .roundbtn { flex: none; width: 36px; height: 36px; border-radius: 50%; border: none; background: var(--soft); color: var(--text); font: inherit; font-size: 15px; font-weight: 800; cursor: pointer; display: none; align-items: center; justify-content: center; }
+  .roundbtn:hover { background: var(--hover); }
+  #top.search-open .roundbtn { display: inline-flex; }
+  #top.search-open .live { display: none; }
+  /* closed: just the bar. open: results while typing, otherwise the home sections */
+  #top .results, #top .home { display: none; }
+  #top.search-open .results.on { display: flex; }
+  #top.search-open:not(.has-q) .home { display: block; }
+  #top.search-open .results, #top.search-open .home { overflow-y: auto; scrollbar-width: none; padding: 4px 6px 10px; margin-top: 8px; min-height: 0; }
+  #top.search-open.has-q .results { flex: 1; }
+  .home .sect { margin: 14px 6px 8px; font-size: 19px; font-weight: 900; letter-spacing: -0.02em; }
+  .home .sect:first-child { margin-top: 6px; }
+  .group { background: var(--soft); border-radius: 18px; overflow: hidden; }
+  .act { display: flex; align-items: center; gap: 12px; width: 100%; padding: 11px 14px; border: none; background: transparent; color: var(--text); font: inherit; font-size: 15px; font-weight: 800; text-align: left; cursor: pointer; text-decoration: none; }
+  .act + .act, .group .favs.on, .act + .favs.on { border-top: 1px solid var(--panel-border); }
+  .act:hover { background: var(--hover); }
+  .act .ic { width: 32px; height: 32px; flex: none; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 16px; background: color-mix(in srgb, var(--c) 22%, transparent); }
+  .act .lbl { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .act .chev { color: var(--muted); font-size: 22px; font-weight: 600; line-height: 1; }
+  .act b { color: var(--muted); font-weight: 700; font-size: 13px; font-variant-numeric: tabular-nums; }
+  /* on/off rows get an iOS switch */
+  .act .sw { width: 42px; height: 26px; flex: none; border-radius: 999px; background: var(--ok); position: relative; transition: background .15s; }
+  .act .sw::after { content: ""; position: absolute; top: 2px; left: 18px; width: 22px; height: 22px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.25); transition: left .15s; }
+  .act.off .sw { background: var(--knob); }
+  .act.off .sw::after { left: 2px; }
+  .home .chips { gap: 8px; }
+  .foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 16px 6px 2px; }
+  .langbtn { background: var(--soft); border: none; height: 28px; padding: 0 11px; border-radius: 999px; font: inherit; font-size: 11px; font-weight: 900; letter-spacing: .06em; color: var(--muted); cursor: pointer; }
   .langbtn:hover { color: var(--text); }
-  #searchBtn { background: var(--soft); border: none; width: 36px; height: 36px; border-radius: 50%; font-size: 16px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; flex: none; }
-  #searchBtn.on { background: var(--stop); }
-  .brand .right { display: flex; align-items: center; gap: 8px; }
-  .chip.fav { --c: #ffc9cf; }
-  .chip.fav.off { opacity: 1; background: var(--soft); box-shadow: none; color: var(--text); }
-  .chip.fav.off .emo { filter: grayscale(1) opacity(.6); }
+  @media (min-width: 720px) {
+    #top.search-open { max-height: calc(100vh - 32px); }
+    body.dir-open #top { display: none; }
+  }
+  @media (max-width: 719px) {
+    /* closed: a floating bar at the bottom; open: a sheet that fills the screen below the status bar */
+    #top { top: auto; left: 12px; right: 12px; width: auto; bottom: calc(12px + env(safe-area-inset-bottom)); padding: 7px; transition: none; }
+    #top.search-open { top: calc(48px + env(safe-area-inset-top)); left: 0; right: 0; bottom: 0; border-radius: 26px 26px 0 0; border-bottom: none; padding: 0 10px env(safe-area-inset-bottom); }
+    #top.search-open > .grab { display: block; margin-bottom: 8px; }
+    #top.search-open .results, #top.search-open .home { flex: 1; }
+    /* a card for a stop, a route or the near-me list takes the bar's place, like Apple's place cards */
+    body:has(#side > .panel.on) #top:not(.search-open), body.dir-open #top:not(.search-open) { display: none; }
+  }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+  /* weather (top left) and the map buttons (bottom right): small frosted pieces over the map */
+  .glass { position: absolute; z-index: 999; background: var(--panel); border: 1px solid var(--panel-border); box-shadow: var(--shadow); backdrop-filter: blur(18px) saturate(140%); -webkit-backdrop-filter: blur(18px) saturate(140%); }
+  #wx { top: calc(12px + env(safe-area-inset-top)); left: 12px; display: inline-flex; align-items: center; gap: 5px; height: 36px; padding: 0 12px 0 10px; border-radius: 12px; font-size: 16px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  #wx[hidden] { display: none; }
+  #wx #wxIcon { font-size: 18px; line-height: 1; }
+  #ctrls { right: 12px; bottom: calc(84px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; border-radius: 16px; overflow: hidden; }
+  #ctrls button { width: 46px; height: 46px; border: none; background: transparent; color: var(--text); font-size: 19px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+  #ctrls button + button { border-top: 1px solid var(--panel-border); }
+  #ctrls button:hover { background: var(--hover); }
+  #nearBtn svg { width: 21px; height: 21px; fill: none; stroke: var(--loc); stroke-width: 2.2; stroke-linejoin: round; }
+  #nearBtn.on svg { fill: var(--loc); }
+  body:has(#side > .panel.on) #ctrls, body.dir-open #ctrls, body:has(#top.search-open) #ctrls { display: none; }
+  @media (min-width: 720px) {
+    #wx { top: 22px; left: 392px; }
+    #ctrls { right: 16px; bottom: 32px; }
+    body:has(#side > .panel.on) #ctrls { display: flex; right: 388px; }
+    body:has(#top.search-open) #ctrls { display: flex; }
+  }
   .favbtn { background: var(--soft); border: none; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; font-size: 15px; line-height: 1; display: inline-flex; align-items: center; justify-content: center; color: var(--heart-off); }
   .favbtn.on { background: color-mix(in srgb, var(--heart) 25%, transparent); color: var(--heart); }
   .favline { background: transparent; border: none; cursor: pointer; font-size: 14px; padding: 0 2px; color: var(--heart-off); vertical-align: middle; }
   .favline.on { color: var(--heart); }
-  .favs { display: none; flex-direction: column; gap: 5px; }
+  .favs { display: none; flex-direction: column; }
   .favs.on { display: flex; }
-  .favs .fhead { font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); padding: 2px 4px 0; }
-  .favs .frow { display: flex; align-items: center; gap: 8px; padding: 7px 8px 7px 10px; border-radius: 14px; background: var(--soft); cursor: pointer; font-weight: 800; font-size: 13px; }
+  .favs .fhead { font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); padding: 10px 14px 2px; }
+  .favs .frow { display: flex; align-items: center; gap: 12px; padding: 9px 14px; cursor: pointer; font-weight: 800; font-size: 14px; }
   .favs .frow:hover { background: var(--hover); }
+  .favs .frow > span:first-child { width: 32px; text-align: center; font-size: 17px; flex: none; }
   .favs .frow span.n { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .favs .frow .x { background: transparent; border: none; cursor: pointer; font-size: 13px; color: var(--heart); }
-  .favs .frow small { color: var(--muted); font-weight: 600; font-size: 11px; }
+  .favs .frow .x { background: transparent; border: none; cursor: pointer; font-size: 15px; color: var(--heart); }
+  .favs .frow small { color: var(--muted); font-weight: 600; font-size: 12px; }
+  .favs .empty { padding: 10px 14px !important; text-align: left; }
   .item .star, .dep .star { color: var(--heart); font-size: 10px; margin-right: 3px; vertical-align: 1px; }
-  @media (max-width: 719px) { #top:not(.search-open) .favs { display: none; } }
-  .chip.stops { display: none; }
-  .chip.install { --c: var(--me); text-decoration: none; }
-  body.standalone .chip.install { display: none !important; }
-  @media (max-width: 719px) { .chip.stops { display: inline-flex; --c: var(--stop); } }
+  body.standalone .act.install { display: none !important; }
 
-  .brand { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-  .brand h1 { margin: 0; font-size: 19px; font-weight: 900; letter-spacing: -0.02em; display: flex; align-items: center; gap: 8px; }
-  .brand h1 .logo { font-size: 22px; line-height: 1; }
   .live { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 800; letter-spacing: 0.08em; color: var(--muted); text-transform: uppercase; background: var(--soft); padding: 4px 9px; border-radius: 999px; }
   .live i { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 0 0 rgba(63,191,134,0.5); animation: pulse 2s infinite; }
   .live.stale i { background: #ff6b6b; animation: none; }
   @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(63,191,134,0.5);} 70% { box-shadow: 0 0 0 8px rgba(63,191,134,0);} 100% { box-shadow: 0 0 0 0 rgba(63,191,134,0);} }
   .sub { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; font-weight: 600; }
 
-  .search { position: relative; }
   .search input {
-    width: 100%; padding: 11px 14px 11px 40px;
-    background: var(--surface); border: 1.5px solid var(--panel-border);
-    border-radius: 999px; color: var(--text); font: inherit; font-size: 14px; font-weight: 600; outline: none;
-    transition: border-color .15s, box-shadow .15s;
+    width: 100%; height: 44px; padding: 0 14px 0 42px;
+    background: var(--soft); border: none;
+    border-radius: 999px; color: var(--text); font: inherit; font-size: 16px; font-weight: 700; outline: none;
   }
-  .search input:focus { border-color: var(--stop); box-shadow: 0 0 0 4px rgba(183,163,232,0.25); }
-  .search input::placeholder { color: var(--muted); font-weight: 500; }
-  .search .ico { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-size: 15px; pointer-events: none; }
+  .search input:focus { box-shadow: 0 0 0 3px rgba(183,163,232,0.3); }
+  .search input::placeholder { color: var(--muted); font-weight: 600; }
+  .search input::-webkit-search-cancel-button { display: none; }
 
   /* stop search results */
   .results { display: none; flex-direction: column; gap: 5px; }
@@ -222,12 +258,6 @@
   .chip.off b { color: var(--muted); }
   .chip.off .emo { filter: grayscale(1); }
 
-  .row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-  .toggle { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 700; color: var(--muted); cursor: pointer; user-select: none; }
-  .toggle input { appearance: none; width: 34px; height: 20px; border-radius: 999px; background: var(--knob); position: relative; cursor: pointer; transition: background .15s; margin: 0; flex: none; }
-  .toggle input::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.2); transition: transform .15s; }
-  .toggle input:checked { background: var(--stop); }
-  .toggle input:checked::after { transform: translateX(14px); }
 
   /* ---------- Right column: stop + near-me panels ---------- */
   #side {
@@ -260,7 +290,6 @@
   @media (min-width: 720px) { #near.on, #stop.on { max-height: 100%; flex: 0 1 auto; } }
   @media (max-width: 719px) {
     #side { left: 0; right: 0; bottom: 0; max-height: 100vh; gap: 0; }
-    #nearBtn { margin: 0 12px calc(34px + env(safe-area-inset-bottom)) 0; }
     .maplibregl-ctrl-attrib.maplibregl-compact { border-radius: 999px; margin: 0 6px 6px 0 !important; }
     #side > .panel { border-radius: 24px 24px 0 0; border-bottom: none; padding-bottom: env(safe-area-inset-bottom); transition: max-height .25s ease, transform .22s ease; }
     #side > .panel.dragging { transition: none; }
@@ -269,28 +298,15 @@
     #stop.on, #routes.on { max-height: 52vh; }
     #near.on { max-height: 44vh; }
     #near.on.tall, #stop.on.tall, #routes.on.tall { max-height: 90vh; }
-    body.routes-open #near, body.routes-open #nearBtn { display: none !important; }
+    body.routes-open #near { display: none !important; }
     .grab { display: block; width: 40px; height: 5px; border-radius: 3px; background: var(--knob); margin: 8px auto 0; flex: none; }
     .panel header { padding-top: 8px; cursor: pointer; }
     body.stop-open #near { display: none !important; }
-    body.stop-open #nearBtn { display: none; }
     .maplibregl-ctrl-zoom-in, .maplibregl-ctrl-zoom-out { display: none !important; }
     .maplibregl-ctrl-bottom-left { margin: 0 0 calc(34px + env(safe-area-inset-bottom)) 10px; }
     .maplibregl-ctrl-bottom-right { margin-bottom: calc(2px + env(safe-area-inset-bottom)); }
   }
 
-  #nearBtn {
-    display: inline-flex; align-items: center; gap: 8px; pointer-events: auto;
-    padding: 12px 18px 12px 14px; border-radius: 999px; border: none;
-    background: var(--me);
-    color: var(--on-color); font: inherit; font-weight: 900; font-size: 14px; cursor: pointer;
-    box-shadow: 0 8px 24px rgba(255,194,71,0.45);
-    transition: transform .12s, box-shadow .15s; flex: none;
-  }
-  #nearBtn:hover { transform: translateY(-2px); box-shadow: 0 12px 28px rgba(255,194,71,0.55); }
-  #nearBtn:active { transform: translateY(0); }
-  #nearBtn .emo { font-size: 18px; line-height: 1; }
-  #nearBtn.on { display: none; }
 
   .panel header { padding: 14px 16px 12px; display: flex; align-items: center; justify-content: space-between; gap: 8px; border-bottom: 1px solid var(--panel-border); flex: none; }
   .panel header h2 { margin: 0; font-size: 16px; font-weight: 900; letter-spacing: -0.01em; display: flex; align-items: center; gap: 8px; min-width: 0; }
@@ -394,7 +410,7 @@
   .dirgo { background: var(--soft); border: none; border-radius: 999px; height: 30px; padding: 0 10px; font: inherit; font-weight: 800; font-size: 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; }
   .dirgo:hover { background: var(--hover); }
   .result .go { margin-top: 2px; }
-  @media (max-width: 719px) { body.dir-open #near, body.dir-open #stop, body.dir-open #routes, body.dir-open #nearBtn { display: none !important; } #dir.on { max-height: 56vh; } #dir.on.tall { max-height: 90vh; } }
+  @media (max-width: 719px) { body.dir-open #near, body.dir-open #stop, body.dir-open #routes { display: none !important; } #dir.on { max-height: 56vh; } #dir.on.tall { max-height: 90vh; } }
   @media (min-width: 720px) {
     body.dir-open #top { display: none; }
     #dir.on { position: fixed; left: 16px; top: 16px; width: 360px; max-height: calc(100vh - 32px); z-index: 1001; }
@@ -500,40 +516,58 @@
 <body>
 <div id="map"></div>
 
+<!-- Apple Maps-style home: a search bar that opens into a sheet with what you saved and shortcuts. -->
 <section id="top" class="panel">
-  <div class="brand">
-    <h1><span class="logo">🚋</span>Tallinn Live</h1>
-    <div class="right">
-      <span class="live" id="live"><i></i><span id="liveText" data-i18n="connecting">connecting</span></span>
-      <button id="themeBtn" class="langbtn" title="Dark / light">🌙</button>
-      <button id="langBtn" class="langbtn" title="Keel / Language">ET</button>
-      <button id="searchBtn" title="Filter lines">🔍</button>
+  <div class="grab"></div>
+  <div class="searchrow">
+    <div class="search">
+      <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 20 20"/></svg>
+      <input id="q" type="search" data-i18n-ph="searchPh" placeholder="Line or stop · e.g. T4, 8, Risti" autocomplete="off" spellcheck="false">
     </div>
-  </div>
-  <div class="search">
-    <span class="ico">🔍</span>
-    <input id="q" type="search" data-i18n-ph="searchPh" placeholder="Line or stop · e.g. T4, 8, Risti" autocomplete="off" spellcheck="false">
+    <span class="live" id="live" title="Live"><i></i><span id="liveText" data-i18n="connecting">connecting</span></span>
+    <button id="searchClose" class="roundbtn" title="Close" aria-label="Close">✕</button>
   </div>
   <div class="results" id="results"></div>
-  <div class="favs" id="favs"></div>
-  <div class="chips">
-    <button class="chip tram" data-type="tram"><span class="emo">🚋</span><span data-i18n="tram">Tram</span> <b id="nTram">0</b></button>
-    <button class="chip bus" data-type="bus"><span class="emo">🚌</span><span data-i18n="bus">Bus</span> <b id="nBus">0</b></button>
-    <button class="chip troll" data-type="troll"><span class="emo">🚎</span><span data-i18n="troll">Trolley</span> <b id="nTroll">0</b></button>
-    <button class="chip county" data-type="county"><span class="emo">🚍</span><span data-i18n="county">Harju</span> <b id="nCounty">0</b></button>
-    <button class="chip tartu" data-type="tartu"><span class="emo">🚌</span><span data-i18n="tartu">Tartu</span> <b id="nTartu">0</b></button>
-    <button class="chip train" data-type="train"><span class="emo">🚆</span><span data-i18n="train">Train</span> <b id="nTrain">0</b></button>
-    <button class="chip fav off" id="favChip"><span class="emo">❤️</span><span data-i18n="favorites">Favorites</span> <b id="nFav">0</b></button>
-    <button class="chip routes" id="routesChip" style="--c: #ffe3a6"><span class="emo">🏠</span><span data-i18n="myRoutes">My routes</span></button>
-    <button class="chip stops" id="stopsChip"><span class="emo">🚏</span><span data-i18n="stops">Stops</span></button>
-    <button class="chip" id="dirChip" style="--c: rgba(183,163,232,0.6)"><span class="emo">🧭</span><span data-i18n="directions">Directions</span></button>
-    <a class="chip install" id="installChip" href="/install"><span class="emo">📲</span><span data-i18n="installApp">Install app</span></a>
-  </div>
-  <div class="row">
-    <label class="toggle"><input type="checkbox" id="stopsToggle" checked> 🚏 <span data-i18n="stopsToggle">Stops · tap for departures</span></label>
-    <span class="sub" id="updated">—</span>
+  <div class="home">
+    <h3 class="sect" data-i18n="saved">Saved</h3>
+    <div class="group">
+      <button class="act" id="routesChip"><span class="ic" style="--c:#ffb340">🏠</span><span class="lbl" data-i18n="myRoutes">My routes</span><span class="chev">›</span></button>
+      <div class="favs" id="favs"></div>
+    </div>
+    <h3 class="sect" data-i18n="explore">Explore</h3>
+    <div class="group">
+      <button class="act" id="nearAct"><span class="ic" style="--c:#3b82f6">📍</span><span class="lbl" data-i18n="nearMe">Near me</span><span class="chev">›</span></button>
+      <button class="act" id="dirChip"><span class="ic" style="--c:#8b74d6">🧭</span><span class="lbl" data-i18n="directions">Directions</span><span class="chev">›</span></button>
+      <button class="act fav off" id="favChip"><span class="ic" style="--c:#e0304a">❤️</span><span class="lbl" data-i18n="onlyFavs">Only favourites</span><b id="nFav">0</b><span class="sw"></span></button>
+      <button class="act stops" id="stopsChip"><span class="ic" style="--c:#b7a3e8">🚏</span><span class="lbl" data-i18n="stopsOnMap">Stops on the map</span><span class="sw"></span></button>
+      <a class="act install" id="installChip" href="/install"><span class="ic" style="--c:#ffc247">📲</span><span class="lbl" data-i18n="installApp">Install app</span><span class="chev">›</span></a>
+    </div>
+    <h3 class="sect" data-i18n="vehicles">Vehicles</h3>
+    <div class="chips">
+      <button class="chip tram" data-type="tram"><span class="emo">🚋</span><span data-i18n="tram">Tram</span> <b id="nTram">0</b></button>
+      <button class="chip bus" data-type="bus"><span class="emo">🚌</span><span data-i18n="bus">Bus</span> <b id="nBus">0</b></button>
+      <button class="chip troll" data-type="troll"><span class="emo">🚎</span><span data-i18n="troll">Trolley</span> <b id="nTroll">0</b></button>
+      <button class="chip county" data-type="county"><span class="emo">🚍</span><span data-i18n="county">Harju</span> <b id="nCounty">0</b></button>
+      <button class="chip tartu" data-type="tartu"><span class="emo">🚌</span><span data-i18n="tartu">Tartu</span> <b id="nTartu">0</b></button>
+      <button class="chip train" data-type="train"><span class="emo">🚆</span><span data-i18n="train">Train</span> <b id="nTrain">0</b></button>
+    </div>
+    <div class="foot">
+      <input type="checkbox" id="stopsToggle" checked hidden>
+      <span class="sub" id="updated">—</span>
+      <button id="langBtn" class="langbtn" title="Keel / Language">ET</button>
+    </div>
   </div>
 </section>
+
+<div id="wx" class="glass" hidden><span id="wxIcon"></span><b id="wxTemp"></b></div>
+
+<div id="ctrls" class="glass">
+  <button id="themeBtn" title="Dark / light" aria-label="Dark / light">🌙</button>
+  <button id="nearBtn" title="Show vehicles passing near you" aria-label="Near me">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 3.5 3.8 10.6c-.6.3-.6 1.2.1 1.4l6.6 1.6 1.6 6.6c.2.7 1.1.7 1.4.1L20.5 3.5Z"/></svg>
+    <span class="sr" data-i18n="nearMe">Near me</span>
+  </button>
+</div>
 
 <div id="side">
   <aside id="dir" class="panel">
@@ -588,11 +622,6 @@
     <div class="list" id="nearList"></div>
     <div class="hint" data-i18n="longPressHint">Long-press (or right-click) the map to move your location.</div>
   </aside>
-
-  <button id="nearBtn" title="Show vehicles passing near you">
-    <span class="emo">📍</span>
-    <span data-i18n="nearMe">Near me</span>
-  </button>
 </div>
 
 <div class="onb" id="onb">
@@ -641,6 +670,7 @@
       approaching: "approaching", movingAway: "moving away", nothingWithin: "🍃 Nothing within {r} right now.<br>Widen the radius or wait a moment.",
       noFavs: "No favourites yet. Tap ♡ on a stop or on a vehicle's card.", favStops: "❤️ Stops", favLines: "❤️ Lines", remove: "Remove",
       elronStation: "🚆 Elron train station", swap: "Swap start and destination",
+      saved: "Saved", explore: "Explore", vehicles: "Vehicles", onlyFavs: "Only favourites", stopsOnMap: "Stops on the map",
       myRoutes: "My routes", saveRoute: "Save this route", routeName: "Name this route (e.g. Home → Work)", routeSaved: "Saved to My routes", routeExists: "Already in My routes",
       noRoutes: "No saved routes yet.<br>Plan a trip in Directions and tap ♡ to keep it here, with its next departures.", openDirections: "🧭 Plan a trip", flip: "Flip direction", noDeps: "No departures found right now.", nowDep: "now", checking: "Checking…", fromMeNoSave: "Choose a destination first.", waitingLocation: "📍 Waiting for your location…",
     },
@@ -670,6 +700,7 @@
       approaching: "läheneb", movingAway: "eemaldub", nothingWithin: "🍃 {r} raadiuses pole praegu midagi.<br>Suurenda raadiust või oota veidi.",
       noFavs: "Lemmikuid veel pole. Puuduta ♡ peatuse paneelil või sõiduki kaardil.", favStops: "❤️ Peatused", favLines: "❤️ Liinid", remove: "Eemalda",
       elronStation: "🚆 Elroni raudteejaam", swap: "Vaheta algus ja sihtkoht",
+      saved: "Salvestatud", explore: "Avasta", vehicles: "Sõidukid", onlyFavs: "Ainult lemmikud", stopsOnMap: "Peatused kaardil",
       myRoutes: "Minu teekonnad", saveRoute: "Salvesta see teekond", routeName: "Pane teekonnale nimi (nt Koju → Tööle)", routeSaved: "Salvestatud Minu teekondadesse", routeExists: "On juba Minu teekondades",
       noRoutes: "Salvestatud teekondi veel pole.<br>Planeeri teekond ja puuduta ♡, siis näed siin selle järgmisi väljumisi.", openDirections: "🧭 Planeeri teekond", flip: "Pööra suund", noDeps: "Praegu väljumisi ei leitud.", nowDep: "nüüd", checking: "Vaatan…", fromMeNoSave: "Vali kõigepealt sihtkoht.", waitingLocation: "📍 Ootan sinu asukohta…",
     },
@@ -718,13 +749,14 @@
     maxPitch: 0,
     attributionControl: false,
   });
-  map.addControl(new maplibregl.NavigationControl({ showCompass: true, visualizePitch: false }), "bottom-left");
+  const phone = window.matchMedia("(max-width: 719px)").matches;
+  map.addControl(new maplibregl.NavigationControl({ showCompass: true, visualizePitch: false }), phone ? "top-right" : "bottom-left");
   // Heading arrows are CSS-rotated; subtract the map bearing so they keep pointing the right way.
   const root = document.documentElement;
   map.on("rotate", () => root.style.setProperty("--mb", map.getBearing().toFixed(1) + "deg"));
   map.on("rotatestart", () => document.body.classList.add("rotating"));
   map.on("rotateend", () => document.body.classList.remove("rotating"));
-  map.addControl(new maplibregl.AttributionControl({ compact: window.matchMedia("(max-width: 719px)").matches, customAttribution: "Data: Tallinna Transport · Põhja-Eesti ÜTK · Tartu LV · Elron" }), "bottom-right");
+  map.addControl(new maplibregl.AttributionControl({ compact: window.matchMedia("(max-width: 719px)").matches, customAttribution: "Data: Tallinna Transport · Põhja-Eesti ÜTK · Tartu LV · Elron" }), phone ? "bottom-left" : "bottom-right");
   // "load" waits for sprites/glyphs too and can hang on flaky mobile networks; the style JSON is enough to add our layers.
   const ready = new Promise((res) => {
     map.once("load", res);
@@ -743,7 +775,38 @@
     set("stop-sel-label", "text-halo-color", paper); set("balti-tracks", "text-halo-color", paper);
     set("route-casing", "line-color", surface); set("route-pts", "circle-color", surface);
     set("stations", "circle-stroke-color", surface); set("stops", "circle-stroke-color", surface);
+    for (const [id, paint] of Object.entries(BASEMAP_TINT[themeOf()])) for (const [prop, v] of Object.entries(paint)) set(id, prop, v);
   }
+  // Apple Maps-like colours over the OpenFreeMap styles: slate-blue land, green parks and blue water in the dark,
+  // warm paper, soft greens and light blue by day. Layer ids cover both styles; missing ones are skipped.
+  const tint = (c) => {
+    const fill = (col) => ({ "fill-color": col }), line = (col) => ({ "line-color": col });
+    const label = (col, halo) => ({ "text-color": col, "text-halo-color": halo });
+    return {
+      background: { "background-color": c.land }, landuse_residential: fill(c.resid),
+      park: fill(c.park), landuse_park: fill(c.park), landcover_wood: fill(c.wood),
+      water: fill(c.water), waterway: line(c.water), building: { "fill-color": c.bldg, "fill-outline-color": c.bldgEdge },
+      road_area_pier: fill(c.land), road_pier: line(c.land), highway_path: line(c.path), highway_minor: line(c.minor),
+      highway_major_casing: line(c.casing), highway_major_inner: line(c.major), highway_major_subtle: line(c.minor),
+      highway_motorway_casing: line(c.mwCasing), highway_motorway_inner: line(c.motorway), highway_motorway_subtle: line(c.minor),
+      highway_motorway_bridge_casing: line(c.mwCasing), highway_motorway_bridge_inner: line(c.motorway),
+      tunnel_motorway_casing: line(c.mwCasing), tunnel_motorway_inner: line(c.motorway),
+      railway: line(c.rail), railway_transit: line(c.rail), railway_minor: line(c.rail), railway_service: line(c.rail),
+      railway_dashline: line(c.land), railway_transit_dashline: line(c.land), railway_minor_dashline: line(c.land), railway_service_dashline: line(c.land),
+      highway_name_other: label(c.roadText, c.land), "highway-name-minor": label(c.roadText, c.land), "highway-name-major": label(c.roadText, c.land), "highway-name-path": label(c.roadText, c.land),
+      water_name: label(c.waterText, c.water), water_name_point_label: label(c.waterText, c.water), water_name_line_label: label(c.waterText, c.water),
+      place_other: label(c.placeText, c.land), place_suburb: label(c.placeText, c.land), place_village: label(c.placeText, c.land), place_town: label(c.placeText, c.land), place_city: label(c.placeText, c.land),
+      label_other: label(c.placeText, c.land), label_village: label(c.placeText, c.land), label_town: label(c.placeText, c.land), label_city: label(c.placeText, c.land), label_city_capital: label(c.placeText, c.land),
+    };
+  };
+  const BASEMAP_TINT = {
+    dark: tint({ land: "#2e3443", resid: "#333a4a", park: "#2c5444", wood: "#2a4f40", water: "#1d3a75", bldg: "#3b4252", bldgEdge: "#454d60",
+      path: "#3b4252", minor: "#4a5267", casing: "#2e3443", major: "#5c6479", mwCasing: "#2e3443", motorway: "#6d7488", rail: "#4a5267",
+      roadText: "#aeb5c6", waterText: "#7ea3e6", placeText: "#d3d8e3" }),
+    light: tint({ land: "#f4f1ea", resid: "#efebe3", park: "#cfe6c2", wood: "#c3dfb6", water: "#a9d1f2", bldg: "#e7e3dc", bldgEdge: "#d9d4cc",
+      path: "#fbfaf7", minor: "#ffffff", casing: "#ddd7cc", major: "#ffffff", mwCasing: "#e8d29a", motorway: "#fde9ad", rail: "#d6d1c8",
+      roadText: "#5d6270", waterText: "#3f6fae", placeText: "#3f4450" }),
+  };
   function setTheme(theme, persist) {
     document.documentElement.dataset.theme = theme;
     if (persist) { try { localStorage.setItem("tl.theme", theme); } catch {} }
@@ -765,6 +828,26 @@
   $("#themeBtn").addEventListener("click", () => setTheme(themeOf() === "dark" ? "light" : "dark", true));
   // Follow the system until the user picks one.
   matchMedia("(prefers-color-scheme: dark)").addEventListener("change", (e) => { let saved = null; try { saved = localStorage.getItem("tl.theme"); } catch {} if (!saved) setTheme(e.matches ? "dark" : "light", false); });
+
+  // ---------- Weather (top left) ----------
+  // WMO weather codes → one emoji; the city follows the map (Tartu when you look at Tartu).
+  const wxEmoji = (code, day) => code === 0 ? (day ? "☀️" : "🌙") : code <= 2 ? (day ? "🌤️" : "☁️") : code === 3 ? "☁️" : code <= 48 ? "🌫️"
+    : code <= 57 ? "🌦️" : code <= 67 ? "🌧️" : code <= 77 ? "🌨️" : code <= 82 ? "🌧️" : code <= 86 ? "🌨️" : "⛈️";
+  let wxCity = null;
+  async function loadWeather() {
+    const city = map.getCenter().lat < 58.7 ? "tartu" : "tallinn";
+    wxCity = city;
+    try {
+      const w = await (await fetch(`/api/weather?city=${city}`)).json();
+      if (w.temp == null) return;
+      $("#wxIcon").textContent = wxEmoji(w.code, w.day);
+      $("#wxTemp").textContent = Math.round(w.temp) + "°";
+      $("#wx").hidden = false;
+    } catch {}
+  }
+  loadWeather();
+  setInterval(loadWeather, 10 * 60 * 1000);
+  map.on("moveend", () => { if ((map.getCenter().lat < 58.7 ? "tartu" : "tallinn") !== wxCity) loadWeather(); });
 
   // ---------- State ----------
   const vehicles = new Map(); // id -> { m, el, shown, from, to, t0, data }
@@ -1091,16 +1174,19 @@
     // Sheets animate their height for 250 ms; measure once they have settled.
     fitTimer = setTimeout(() => { const b = sheetPad(); if (Math.abs((map.getPadding().bottom || 0) - b) > 4) map.easeTo({ padding: { top: 0, bottom: b, left: 0, right: 0 }, duration }); }, 280);
   }
-  $("#searchBtn").addEventListener("click", () => {
-    const open = $("#top").classList.toggle("search-open");
-    $("#searchBtn").classList.toggle("on", open);
-    if (open) $("#q").focus();
-  });
-  // On phones the filter chips live under the search box and show only while it is in use.
-  $("#q").addEventListener("focus", () => { if (isMobile()) $("#top").classList.add("search-open"); });
-  const closeSearch = () => { if (isMobile()) { $("#top").classList.remove("search-open"); $("#q").blur(); } };
+  // The search bar opens into the home sheet (saved places, shortcuts, vehicle filters); typing swaps it for results.
+  const syncQ = () => $("#top").classList.toggle("has-q", !!$("#q").value.trim());
+  $("#q").addEventListener("focus", () => $("#top").classList.add("search-open"));
+  $("#q").addEventListener("input", syncQ);
+  const closeSearch = () => {
+    if (!$("#top").classList.contains("search-open")) return;
+    $("#top").classList.remove("search-open"); $("#q").blur();
+  };
+  $("#searchClose").addEventListener("click", () => { $("#q").value = ""; $("#q").dispatchEvent(new Event("input")); closeSearch(); });
+  addEventListener("keydown", (e) => { if (e.key === "Escape") closeSearch(); });
   map.getContainer().addEventListener("touchstart", closeSearch, { passive: true });
   map.on("click", closeSearch);
+  $("#nearAct").addEventListener("click", () => { closeSearch(); $("#nearBtn").click(); });
   $("#stopsChip").addEventListener("click", () => {
     const cb = $("#stopsToggle");
     cb.checked = !cb.checked;
@@ -1314,7 +1400,7 @@
     box.innerHTML = h;
     box.querySelectorAll("[data-rm-stop]").forEach((b) => b.addEventListener("click", (e) => { e.stopPropagation(); favs.stops.splice(Number(b.dataset.rmStop), 1); favsChanged(); }));
     box.querySelectorAll("[data-rm-line]").forEach((b) => b.addEventListener("click", (e) => { e.stopPropagation(); favs.lines.splice(Number(b.dataset.rmLine), 1); favsChanged(); }));
-    box.querySelectorAll("[data-stop]").forEach((r) => r.addEventListener("click", () => { const f = favs.stops[Number(r.dataset.stop)]; openStop({ name: f.name, lat: f.lat, lon: f.lon, train: f.train, siri: f.siri || null }, f.siri || null); map.flyTo({ center: [f.lon, f.lat], zoom: Math.max(map.getZoom(), 15.5), duration: 700 }); if (isMobile()) closeSearch(); }));
+    box.querySelectorAll("[data-stop]").forEach((r) => r.addEventListener("click", () => { const f = favs.stops[Number(r.dataset.stop)]; openStop({ name: f.name, lat: f.lat, lon: f.lon, train: f.train, siri: f.siri || null }, f.siri || null); map.flyTo({ center: [f.lon, f.lat], zoom: Math.max(map.getZoom(), 15.5), duration: 700 }); closeSearch(); }));
     box.querySelectorAll("[data-line]").forEach((r) => r.addEventListener("click", () => { const [, line] = favs.lines[Number(r.dataset.line)].split(":"); $("#q").value = line; $("#q").dispatchEvent(new Event("input")); }));
   }
   document.addEventListener("click", (e) => {
@@ -1409,7 +1495,7 @@
     box.querySelectorAll(".result").forEach((row) => {
       const g = top[Number(row.dataset.i)];
       row.addEventListener("click", (e) => {
-        if (e.target.closest("[data-go]")) { const p = g.platforms[0]; openDirections({ name: g.name, lat: p.lat, lon: p.lon }); if (isMobile()) closeSearch(); return; }
+        if (e.target.closest("[data-go]")) { const p = g.platforms[0]; openDirections({ name: g.name, lat: p.lat, lon: p.lon }); closeSearch(); return; }
         const btn = e.target.closest(".dirbtn");
         selectStop(g, btn ? btn.dataset.siri : null);
       });
@@ -1429,7 +1515,7 @@
           </div>`).join("");
         pr.querySelectorAll(".result.place").forEach((row) => {
           const r = places[Number(row.dataset.i)];
-          row.addEventListener("click", () => { openDirections({ name: r.name, lat: r.lat, lon: r.lon }); if (isMobile()) closeSearch(); });
+          row.addEventListener("click", () => { openDirections({ name: r.name, lat: r.lat, lon: r.lon }); closeSearch(); });
         });
       } catch {}
     }, 300);
@@ -1448,7 +1534,7 @@
     const target = siri ? g.platforms.find((p) => p.siri === siri) : g.platforms[0];
     openStop(target, siri);
     map.flyTo({ center: [target.lon, target.lat], zoom: Math.max(map.getZoom(), 15.5), duration: 800 });
-    if (isMobile()) closeSearch();
+    closeSearch();
   }
 
   // ---------- Stop departures timeline ----------
@@ -1679,7 +1765,7 @@
     clearRoute();
   }
   $("#dirClose").addEventListener("click", closeDirections);
-  $("#dirChip").addEventListener("click", () => { askNotify(); openDirections(); if (isMobile()) closeSearch(); });
+  $("#dirChip").addEventListener("click", () => { askNotify(); openDirections(); closeSearch(); });
   const askNotify = () => { startCompass(); try { if ("Notification" in window && Notification.permission === "default") Notification.requestPermission(); } catch {} };
   $("#stopDir").addEventListener("click", () => {
     askNotify();
@@ -1874,7 +1960,7 @@
   function openRoutes() {
     closeStop(); closeNear();
     $("#routes").classList.add("on"); document.body.classList.add("routes-open"); fitSheet();
-    if (isMobile()) closeSearch();
+    closeSearch();
     renderRoutes();
     clearInterval(routesTimer); routesTimer = setInterval(renderRoutes, 30000);
   }
@@ -1882,7 +1968,7 @@
     $("#routes").classList.remove("on", "tall"); document.body.classList.remove("routes-open"); fitSheet();
     clearInterval(routesTimer); routesTimer = null;
   }
-  $("#routesChip").addEventListener("click", () => { if ($("#routes").classList.contains("on")) closeRoutes(); else openRoutes(); });
+  $("#routesChip").addEventListener("click", () => { closeSearch(); if ($("#routes").classList.contains("on")) closeRoutes(); else openRoutes(); });
   $("#routesClose").addEventListener("click", closeRoutes);
   window.addEventListener("tl:lang", () => { if ($("#routes").classList.contains("on")) renderRoutes(); });
 
