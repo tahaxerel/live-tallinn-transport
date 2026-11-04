@@ -156,7 +156,6 @@
   .act .sw::after { content: ""; position: absolute; top: 2px; left: 18px; width: 22px; height: 22px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.25); transition: left .15s; }
   .act.off .sw { background: var(--knob); }
   .act.off .sw::after { left: 2px; }
-  .home .chips { gap: 8px; }
   .foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 16px 6px 2px; }
   .langbtn { background: var(--soft); border: none; height: 28px; padding: 0 11px; border-radius: 999px; font: inherit; font-size: 11px; font-weight: 900; letter-spacing: .06em; color: var(--muted); cursor: pointer; }
   .langbtn:hover { color: var(--text); }
@@ -250,20 +249,21 @@
   .tabs::-webkit-scrollbar { display: none; }
   .tabs .dirbtn { flex: none; font-size: 12px; padding: 5px 11px 5px 5px; max-width: 75%; }
 
-  .chips { display: flex; gap: 8px; flex-wrap: wrap; }
+  /* Vehicle filters: quiet two-column tiles, a colour dot says which is which; off = hollow dot, faded */
+  .chips { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
   .chip {
-    display: inline-flex; align-items: center; gap: 6px;
-    padding: 7px 12px 7px 9px; border-radius: 999px;
-    border: 1.5px solid transparent; background: var(--c);
-    color: var(--on-color); font: inherit; font-size: 13px; font-weight: 800; cursor: pointer;
-    transition: all .15s; user-select: none; box-shadow: 0 2px 8px color-mix(in srgb, var(--c) 45%, transparent);
+    display: flex; align-items: center; gap: 10px; min-width: 0;
+    padding: 11px 12px; border-radius: 14px; border: none; background: var(--soft);
+    color: var(--text); font: inherit; font-size: 14px; font-weight: 700; text-align: left; cursor: pointer;
+    transition: background .15s, opacity .15s; user-select: none;
   }
-  .chip .emo { font-size: 16px; line-height: 1; }
-  .chip b { font-variant-numeric: tabular-nums; font-weight: 700; color: var(--on-color-muted); }
-  .chip:hover { transform: translateY(-1px); }
-  .chip.off { background: var(--soft); box-shadow: none; opacity: 0.6; color: var(--text); }
-  .chip.off b { color: var(--muted); }
-  .chip.off .emo { filter: grayscale(1); }
+  .chip::before { content: ""; width: 10px; height: 10px; flex: none; border-radius: 50%; background: var(--c); box-shadow: 0 0 0 3px color-mix(in srgb, var(--c) 28%, transparent); transition: all .15s; }
+  .chip .emo { display: none; }
+  .chip > span:not(.emo) { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .chip b { font-variant-numeric: tabular-nums; font-weight: 600; font-size: 13px; color: var(--muted); }
+  .chip:hover { background: var(--hover); }
+  .chip.off { opacity: 0.5; }
+  .chip.off::before { background: transparent; box-shadow: inset 0 0 0 2px var(--c); }
 
 
   /* ---------- Right column: stop + near-me panels ---------- */
