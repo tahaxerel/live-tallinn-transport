@@ -1172,7 +1172,9 @@
   function fitSheet(duration = 350) {
     clearTimeout(fitTimer);
     // Sheets animate their height for 250 ms; measure once they have settled.
-    fitTimer = setTimeout(() => { const b = sheetPad(); if (Math.abs((map.getPadding().bottom || 0) - b) > 4) map.easeTo({ padding: { top: 0, bottom: b, left: 0, right: 0 }, duration }); }, 280);
+    // A flight already under way (to the stop you picked) is left to land first; easing now would cut it short mid-air.
+    const pad = () => { const b = sheetPad(); if (Math.abs((map.getPadding().bottom || 0) - b) > 4) map.easeTo({ padding: { top: 0, bottom: b, left: 0, right: 0 }, duration }); };
+    fitTimer = setTimeout(() => { if (map.isMoving()) map.once("moveend", pad); else pad(); }, 280);
   }
   // The search bar opens into the home sheet (saved places, shortcuts, vehicle filters); typing swaps it for results.
   const syncQ = () => $("#top").classList.toggle("has-q", !!$("#q").value.trim());
