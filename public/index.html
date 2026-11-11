@@ -187,6 +187,28 @@
   #topleft { position: absolute; z-index: 999; top: calc(12px + env(safe-area-inset-top)); left: 12px; display: flex; gap: 8px; pointer-events: none; }
   #topleft > .glass { position: static; pointer-events: auto; }
   #alertsAct[hidden] { display: none; }
+  /* ---------- Airport: a plane on the terminal, its panel lists live departures and arrivals ---------- */
+  .plane { width: 40px; height: 40px; cursor: pointer; --c: #4a9fe0; }
+  .plane .bubble { width: 36px; height: 36px; border-radius: 50%; background: var(--surface); border: 2.5px solid var(--c); display: flex; align-items: center; justify-content: center; font-size: 19px; line-height: 1; box-shadow: 0 4px 12px rgba(80,60,40,0.25); transition: transform .15s; }
+  .plane:hover .bubble, .plane.on .bubble { transform: scale(1.12); }
+  .plane.on .bubble { box-shadow: 0 0 0 4px color-mix(in srgb, var(--c) 40%, transparent), 0 4px 14px rgba(80,60,40,0.3); }
+  #airportTabs .dirbtn { padding: 6px 13px; font-size: 13px; gap: 6px; }
+  #airport .list { padding: 4px 10px 10px; overflow-y: auto; }
+  .fday { margin: 10px 6px 4px; font-size: 11px; font-weight: 900; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+  .flt { display: grid; grid-template-columns: 50px 1fr auto; gap: 10px; align-items: center; padding: 8px 6px; border-radius: 14px; color: inherit; text-decoration: none; }
+  .flt:hover { background: var(--soft); }
+  .flt .ft { text-align: right; font-weight: 900; font-size: 16px; font-variant-numeric: tabular-nums; line-height: 1.05; letter-spacing: -0.02em; }
+  .flt .ft del { display: block; font-size: 11px; font-weight: 700; color: var(--muted); letter-spacing: 0; }
+  .flt .fm { min-width: 0; }
+  .flt .fc { font-weight: 800; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .flt .fn { font-size: 11px; font-weight: 600; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .flt .fn b { color: var(--text); font-weight: 800; }
+  .flt .fs { font-size: 11px; font-weight: 800; border-radius: 999px; padding: 3px 8px; white-space: nowrap; background: var(--soft); color: var(--muted); }
+  .flt .fs.late { color: var(--warn); background: color-mix(in srgb, var(--warn) 14%, transparent); }
+  .flt .fs.early { color: var(--early); background: color-mix(in srgb, var(--early) 14%, transparent); }
+  .flt .fs.go { color: var(--good); background: color-mix(in srgb, var(--good) 14%, transparent); }
+  .flt .fs.cancelled { color: #fff; background: #d64545; }
+  .flt.past { opacity: .55; }
   /* ---------- Contact form ---------- */
   .cform { display: flex; flex-direction: column; gap: 12px; padding: 14px 16px 16px; overflow-y: auto; min-height: 0; }
   .cform .cintro { margin: 0; font-size: 13px; font-weight: 600; color: var(--muted); line-height: 1.45; }
@@ -319,7 +341,7 @@
   #side > .panel { width: 100%; display: none; flex-direction: column; overflow: hidden; min-height: 0; }
   #side > .panel.on { display: flex; }
   #near.on { max-height: 46vh; }
-  #stop.on, #routes.on, #alerts.on, #contact.on, #trip.on, #line.on { max-height: 60vh; }
+  #stop.on, #routes.on, #alerts.on, #contact.on, #airport.on, #trip.on, #line.on { max-height: 60vh; }
   .rt { padding: 10px 10px 8px; border-radius: 16px; display: grid; gap: 6px; }
   .rt + .rt { margin-top: 2px; }
   .rt:hover { background: var(--soft); }
@@ -337,7 +359,7 @@
   #dirSave.on { color: #e5484d; }
   #dirSave:disabled { opacity: .35; cursor: default; }
   .grab { display: none; }
-  @media (min-width: 720px) { #near.on, #stop.on, #alerts.on, #contact.on, #trip.on, #line.on { max-height: 100%; flex: 0 1 auto; } }
+  @media (min-width: 720px) { #near.on, #stop.on, #alerts.on, #contact.on, #airport.on, #trip.on, #line.on { max-height: 100%; flex: 0 1 auto; } }
   @media (max-width: 719px) {
     #side { left: 0; right: 0; bottom: 0; max-height: 100vh; gap: 0; }
     .maplibregl-ctrl-attrib.maplibregl-compact { border-radius: 999px; margin: 0 6px 6px 0 !important; }
@@ -345,9 +367,9 @@
     #side > .panel.dragging { transition: none; }
     /* iOS zooms into any field under 16px; keep phones at 16px and desktops compact. */
     #top .search input, .fields input { font-size: 16px; }
-    #stop.on, #routes.on, #alerts.on, #contact.on, #trip.on, #line.on { max-height: 52vh; }
+    #stop.on, #routes.on, #alerts.on, #contact.on, #airport.on, #trip.on, #line.on { max-height: 52vh; }
     #near.on { max-height: 44vh; }
-    #near.on.tall, #stop.on.tall, #routes.on.tall, #alerts.on.tall, #contact.on.tall, #trip.on.tall, #line.on.tall { max-height: 90vh; }
+    #near.on.tall, #stop.on.tall, #routes.on.tall, #alerts.on.tall, #contact.on.tall, #airport.on.tall, #trip.on.tall, #line.on.tall { max-height: 90vh; }
     body.routes-open #near { display: none !important; }
     .grab { display: block; width: 40px; height: 5px; border-radius: 3px; background: var(--knob); margin: 8px auto 0; flex: none; }
     .panel header { padding-top: 8px; cursor: pointer; }
@@ -750,6 +772,19 @@
     <div class="list" id="nearList"></div>
     <div class="hint" data-i18n="longPressHint">Long-press (or right-click) the map to move your location.</div>
   </aside>
+  <aside id="airport" class="panel">
+    <div class="grab"></div>
+    <header>
+      <h2><span class="emo">✈️</span><span data-i18n="airport">Tallinn Airport</span></h2>
+      <div class="right"><span class="sub" id="airportUpdated"></span><button class="iconbtn" id="airportClose" title="Close">✕</button></div>
+    </header>
+    <div class="tabs on" id="airportTabs">
+      <button class="dirbtn on" data-ftype="departures">🛫 <span data-i18n="departures">Departures</span></button>
+      <button class="dirbtn" data-ftype="arrivals">🛬 <span data-i18n="arrivals">Arrivals</span></button>
+    </div>
+    <div class="list" id="airportList"></div>
+    <div class="hint" data-i18n="flightsSource">Source: Tallinn Airport (airport.ee)</div>
+  </aside>
   <aside id="contact" class="panel">
     <div class="grab"></div>
     <header>
@@ -822,6 +857,7 @@
       noFavs: "No favourites yet. Tap ♡ on a stop or on a vehicle's card.", favStops: "❤️ Stops", favLines: "❤️ Lines", remove: "Remove",
       elronStation: "🚆 Elron train station", swap: "Swap start and destination",
       share: "Share", linkCopied: "Link copied", vehGone: "That vehicle isn't on the road any more.", waitingN: "{n} waiting to leave", lineLoading: "Loading the route…", lineNoRoute: "Its route isn't available right now: none of its vehicles is out on a trip.", vehHere: "here", nextStops: "Next stops", allStops: "All stops ({n})", hideStops: "Fewer stops", minShort: "{n} min", recents: "Recents", clear: "Clear", alerts: "Service alerts", alertsSource: "Source: Tallinna Transport. Notices are in Estonian.", noAlerts: "No service alerts right now.", alertN: "{n} alert", alertsN: "{n} alerts", allAlerts: "All alerts", alertsFor: "Alerts for line {line}", alertNow: "Now", alertFrom: "From {d}", showMore: "Show more", saved: "Saved", explore: "Explore", vehicles: "Vehicles", onlyFavs: "Only favourites", stopsOnMap: "Stops on the map",
+      airport: "Tallinn Airport", departures: "Departures", arrivals: "Arrivals", flightsSource: "Source: Tallinn Airport (airport.ee). Tap a flight for its details.", noFlights: "No flights on the board right now.", flightsFailed: "Couldn't load the flight board.<br>Retrying shortly.", today: "Today", tomorrow: "Tomorrow", yesterday: "Yesterday", loadingFlights: "Loading flights…",
       contactUs: "Contact us", contactIntro: "Found a bug, have an idea, or want to say hi? Write to us. We read every message.", contactName: "Name (optional)", contactEmail: "Email, if you'd like a reply (optional)", contactMsg: "Message", contactSend: "Send", contactSending: "Sending…", contactThanks: "Thanks! Your message is on its way.", contactAgain: "Write another", contactErrEmpty: "Please write a message first.", contactErrEmail: "That email doesn't look right.", contactErrRate: "Too many messages. Please try again later.", contactErrSend: "Couldn't send it. Please try again in a moment.",
       myRoutes: "My routes", saveRoute: "Save this route", routeName: "Name this route (e.g. Home → Work)", routeSaved: "Saved to My routes", routeExists: "Already in My routes",
       noRoutes: "No saved routes yet.<br>Plan a trip in Directions and tap ♡ to keep it here, with its next departures.", openDirections: "🧭 Plan a trip", flip: "Flip direction", noDeps: "No departures found right now.", nowDep: "now", checking: "Checking…", fromMeNoSave: "Choose a destination first.", waitingLocation: "📍 Waiting for your location…",
@@ -853,6 +889,7 @@
       noFavs: "Lemmikuid veel pole. Puuduta ♡ peatuse paneelil või sõiduki kaardil.", favStops: "❤️ Peatused", favLines: "❤️ Liinid", remove: "Eemalda",
       elronStation: "🚆 Elroni raudteejaam", swap: "Vaheta algus ja sihtkoht",
       share: "Jaga", linkCopied: "Link kopeeritud", vehGone: "Seda sõidukit pole enam teel.", waitingN: "{n} ootab väljumist", lineLoading: "Laen liini…", lineNoRoute: "Liini teekonda praegu pole: ükski sõiduk pole reisil.", vehHere: "siin", nextStops: "Järgmised peatused", allStops: "Kõik peatused ({n})", hideStops: "Vähem peatusi", minShort: "{n} min", recents: "Hiljutised", clear: "Tühjenda", alerts: "Liiklusteated", alertsSource: "Allikas: Tallinna Transport.", noAlerts: "Praegu teateid ei ole.", alertN: "{n} teade", alertsN: "{n} teadet", allAlerts: "Kõik teated", alertsFor: "Liini {line} teated", alertNow: "Praegu", alertFrom: "Alates {d}", showMore: "Loe edasi", saved: "Salvestatud", explore: "Avasta", vehicles: "Sõidukid", onlyFavs: "Ainult lemmikud", stopsOnMap: "Peatused kaardil",
+      airport: "Tallinna Lennujaam", departures: "Väljuvad", arrivals: "Saabuvad", flightsSource: "Allikas: Tallinna Lennujaam (airport.ee). Puuduta lendu, et näha üksikasju.", noFlights: "Lennutabloo on praegu tühi.", flightsFailed: "Lennuinfot ei õnnestunud laadida.<br>Proovin varsti uuesti.", today: "Täna", tomorrow: "Homme", yesterday: "Eile", loadingFlights: "Laen lende…",
       contactUs: "Võta ühendust", contactIntro: "Leidsid vea, sul on idee või tahad lihtsalt tere öelda? Kirjuta meile. Loeme iga sõnumit.", contactName: "Nimi (valikuline)", contactEmail: "E-post, kui soovid vastust (valikuline)", contactMsg: "Sõnum", contactSend: "Saada", contactSending: "Saadan…", contactThanks: "Aitäh! Sinu sõnum on teel.", contactAgain: "Kirjuta veel", contactErrEmpty: "Kirjuta enne sõnum.", contactErrEmail: "See e-posti aadress ei tundu õige.", contactErrRate: "Liiga palju sõnumeid. Proovi hiljem uuesti.", contactErrSend: "Saatmine ebaõnnestus. Proovi hetke pärast uuesti.",
       myRoutes: "Minu teekonnad", saveRoute: "Salvesta see teekond", routeName: "Pane teekonnale nimi (nt Koju → Tööle)", routeSaved: "Salvestatud Minu teekondadesse", routeExists: "On juba Minu teekondades",
       noRoutes: "Salvestatud teekondi veel pole.<br>Planeeri teekond ja puuduta ♡, siis näed siin selle järgmisi väljumisi.", openDirections: "🧭 Planeeri teekond", flip: "Pööra suund", noDeps: "Praegu väljumisi ei leitud.", nowDep: "nüüd", checking: "Vaatan…", fromMeNoSave: "Vali kõigepealt sihtkoht.", waitingLocation: "📍 Ootan sinu asukohta…",
@@ -1365,7 +1402,7 @@
     if (on("#near")) closeNear();
     if (on("#routes")) closeRoutes();
     if (on("#dir")) closeDirections();
-    closeAlerts(); closeContact(); closeSearch();
+    closeAlerts(); closeContact(); closeAirport(); closeSearch();
     if (v.popup.isOpen()) v.m.togglePopup();
     $("#tripBadge").innerHTML = badge(v.data.type, v.data.label || v.data.line);
     $("#tripTitle").textContent = "→ " + (v.data.dest || v.data.route || "");
@@ -1543,8 +1580,8 @@
   $("#stopsToggle").addEventListener("change", syncStopsChip);
   syncStopsChip();
   // Bottom sheets on phones: tap the header to expand, drag the handle/header down to close, up to expand.
-  const SHEET_CLOSE = { stop: () => closeStop(), near: () => closeNear(), dir: () => closeDirections(), routes: () => closeRoutes(), alerts: () => closeAlerts(), contact: () => closeContact(), trip: () => closeTrip(), line: () => closeLine(true) };
-  for (const sel of ["#stop header", "#near header", "#dir header", "#routes header", "#alerts header", "#contact header", "#trip header", "#line header"]) {
+  const SHEET_CLOSE = { stop: () => closeStop(), near: () => closeNear(), dir: () => closeDirections(), routes: () => closeRoutes(), alerts: () => closeAlerts(), contact: () => closeContact(), airport: () => closeAirport(), trip: () => closeTrip(), line: () => closeLine(true) };
+  for (const sel of ["#stop header", "#near header", "#dir header", "#routes header", "#alerts header", "#contact header", "#airport header", "#trip header", "#line header"]) {
     const panel = $(sel).closest(".panel");
     let drag = null;
     $(sel).addEventListener("click", (e) => {
@@ -1811,7 +1848,7 @@
     if (on("#near")) closeNear();
     if (on("#routes")) closeRoutes();
     if (on("#dir")) closeDirections();
-    closeContact(); closeTrip(); closeLine(); closeSearch();
+    closeContact(); closeAirport(); closeTrip(); closeLine(); closeSearch();
     alertFilter = filter;
     $("#alerts").classList.add("on"); $("#alerts").classList.remove("tall");
     renderAlerts(); fitSheet();
@@ -1823,6 +1860,91 @@
   $("#alertsAct").addEventListener("click", () => openAlerts());
   $("#alertsClose").addEventListener("click", closeAlerts);
 
+  // ---------- Tallinn Airport: ✈️ on the terminal; its panel shows the airport's own live flight board ----------
+  const AIRPORT = [24.8330, 59.4133]; // middle of runway 08/26 (OSM)
+  const air = { type: "departures", data: null, at: 0, timer: null, seq: 0 };
+  const planeEl = document.createElement("div");
+  planeEl.className = "plane";
+  planeEl.title = "Tallinn Airport";
+  planeEl.innerHTML = `<div class="bubble">✈️</div>`;
+  new maplibregl.Marker({ element: planeEl }).setLngLat(AIRPORT).addTo(map);
+  planeEl.addEventListener("click", (e) => { e.stopPropagation(); $("#airport").classList.contains("on") ? closeAirport() : openAirport(); });
+
+  const tallinnDay = (offset = 0) => new Date(Date.now() + offset * 864e5).toLocaleDateString("en-CA", { timeZone: "Europe/Tallinn" }); // YYYY-MM-DD
+  function dayLabel(d) {
+    if (d === tallinnDay(0)) return t("today");
+    if (d === tallinnDay(1)) return t("tomorrow");
+    if (d === tallinnDay(-1)) return t("yesterday");
+    return d ? new Date(d + "T12:00:00").toLocaleDateString(lang === "et" ? "et-EE" : "en-GB", { weekday: "long", day: "numeric", month: "long" }) : "";
+  }
+  function renderAirport() {
+    const list = $("#airportList");
+    if (!air.data) { list.innerHTML = `<div class="empty">${t("loadingFlights")}</div>`; return; }
+    if (air.data.error) { list.innerHTML = `<div class="empty">😕 ${t("flightsFailed")}</div>`; return; }
+    const rows = air.data[air.type] || [];
+    if (!rows.length) { list.innerHTML = `<div class="empty">😴 ${t("noFlights")}</div>`; return; }
+    let day = null, html = "";
+    for (const f of rows) {
+      if (f.date !== day) { day = f.date; html += `<div class="fday">${esc(dayLabel(day))}</div>`; }
+      const done = f.kind === "departed" || f.kind === "landed";
+      const cls = f.kind === "cancelled" ? "cancelled" : f.kind === "boarding" || f.kind === "departing" ? "go" : f.late ? "late" : f.early ? "early" : "";
+      const changed = f.sched && f.time && f.sched !== f.time;
+      html += `<a class="flt${done ? " past" : ""}" ${f.url ? `href="${esc(f.url)}" target="_blank" rel="noopener"` : ""}>
+        <div class="ft">${esc(f.time || f.sched)}${changed ? `<del>${esc(f.sched)}</del>` : ""}</div>
+        <div class="fm"><div class="fc">${air.type === "departures" ? "→ " : "← "}${esc(f.city)}</div><div class="fn"><b>${esc(f.flight)}</b> · ${esc(f.airline)}</div></div>
+        ${f.status ? `<span class="fs ${cls}">${esc(f.status)}</span>` : ""}
+      </a>`;
+    }
+    list.innerHTML = html;
+    // Start at the first flight that is still to come, not at this morning's departures.
+    if (!air.scrolled) {
+      air.scrolled = true;
+      const first = list.querySelector(".flt:not(.past)");
+      if (first) list.scrollTop = Math.max(0, first.offsetTop - list.offsetTop - 30);
+    }
+  }
+  async function loadAirport() {
+    const seq = ++air.seq;
+    try {
+      const r = await fetch(`/api/station?airport=1&lang=${lang}`);
+      if (!r.ok) throw new Error(r.status);
+      const j = await r.json();
+      if (seq !== air.seq) return;
+      air.data = j; air.at = Date.now();
+    } catch {
+      if (seq !== air.seq) return;
+      if (!air.data || air.data.error) air.data = { error: true }; // keep showing the last good board
+    }
+    renderAirport();
+  }
+  function openAirport() {
+    const on = (id) => $(id).classList.contains("on");
+    if (on("#stop")) closeStop();
+    if (on("#near")) closeNear();
+    if (on("#routes")) closeRoutes();
+    if (on("#dir")) closeDirections();
+    closeAlerts(); closeContact(); closeTrip(); closeLine(); closeSearch();
+    $("#airport").classList.add("on"); $("#airport").classList.remove("tall");
+    planeEl.classList.add("on");
+    air.scrolled = false;
+    renderAirport(); loadAirport(); fitSheet();
+    clearInterval(air.timer); air.timer = setInterval(loadAirport, 60000);
+  }
+  function closeAirport() {
+    if (!$("#airport").classList.contains("on")) return;
+    $("#airport").classList.remove("on", "tall"); planeEl.classList.remove("on"); fitSheet();
+    clearInterval(air.timer); air.timer = null;
+  }
+  $("#airportClose").addEventListener("click", closeAirport);
+  $("#airportTabs").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-ftype]"); if (!b) return;
+    air.type = b.dataset.ftype; air.scrolled = false;
+    $("#airportTabs").querySelectorAll("[data-ftype]").forEach((x) => x.classList.toggle("on", x === b));
+    $("#airportList").scrollTop = 0; renderAirport();
+  });
+  setInterval(() => { if (air.timer && air.at) $("#airportUpdated").textContent = t("ago", { s: Math.round((Date.now() - air.at) / 1000) }); }, 1000);
+  window.addEventListener("tl:lang", () => { if ($("#airport").classList.contains("on")) { air.data = null; air.scrolled = false; renderAirport(); loadAirport(); } });
+
   // ---------- Contact form: posts to /api/contact, which mails the owner (the address stays server-side) ----------
   function openContact() {
     const on = (id) => $(id).classList.contains("on");
@@ -1830,7 +1952,7 @@
     if (on("#near")) closeNear();
     if (on("#routes")) closeRoutes();
     if (on("#dir")) closeDirections();
-    closeAlerts(); closeContact(); closeTrip(); closeLine(); closeSearch();
+    closeAlerts(); closeContact(); closeAirport(); closeTrip(); closeLine(); closeSearch();
     $("#contact").classList.add("on");
     $("#contact").classList.toggle("tall", isMobile()); // room for the keyboard and the message box
     fitSheet();
@@ -1906,7 +2028,7 @@
     if (on("#near")) closeNear();
     if (on("#routes")) closeRoutes();
     if (on("#dir")) closeDirections();
-    closeAlerts(); closeContact(); closeTrip(); closeLine();
+    closeAlerts(); closeContact(); closeAirport(); closeTrip(); closeLine();
     const color = MODE_COLOR()[type];
     lineView = { type, line, dirs: null, cur: 0, color };
     $("#line").style.setProperty("--c", color);
@@ -2352,7 +2474,7 @@
     syncStopFav();
   });
   function openStop(s, onlySiri = null) {
-    closeAlerts(); closeContact(); closeTrip(); closeLine();
+    closeAlerts(); closeContact(); closeAirport(); closeTrip(); closeLine();
     if (!s.train && s.siri && !stops.includes(s)) { // favourite platform: find the real stop by id
       const real = stops.find((o) => o.siri === s.siri);
       if (real) s = real;
@@ -2537,7 +2659,7 @@
     $("#dirTo").value = dir.to ? dir.to.name : "";
   }
   function openDirections(to, from) {
-    closeAlerts(); closeContact(); closeTrip(); closeLine();
+    closeAlerts(); closeContact(); closeAirport(); closeTrip(); closeLine();
     if (to !== undefined) dir.to = to;
     if (from !== undefined) dir.from = from;
     syncDirFields();
@@ -2746,7 +2868,7 @@
 
   let routesTimer = null, routesRetry = null, routesSeq = 0;
   function openRoutes() {
-    closeStop(); closeNear(); closeAlerts(); closeContact(); closeTrip(); closeLine();
+    closeStop(); closeNear(); closeAlerts(); closeContact(); closeAirport(); closeTrip(); closeLine();
     $("#routes").classList.add("on"); document.body.classList.add("routes-open"); fitSheet();
     closeSearch();
     renderRoutes();
@@ -3090,7 +3212,7 @@
     for (const id of ["me-fill", "me-line"]) if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", on);
   }
   function openNear(fly) {
-    closeAlerts(); closeContact(); closeTrip(); closeLine();
+    closeAlerts(); closeContact(); closeAirport(); closeTrip(); closeLine();
     $("#near").classList.add("on"); $("#nearBtn").classList.add("on"); $("#near").classList.remove("tall");
     syncRadiusRing();
     if (fly && me) map.flyTo({ center: [me.lon, me.lat], zoom: Math.max(map.getZoom(), 16), duration: 800, padding: { top: 0, bottom: sheetPad(), left: 0, right: 0 } });

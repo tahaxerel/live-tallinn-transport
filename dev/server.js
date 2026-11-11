@@ -8,6 +8,7 @@ const path = require("path");
 const { getVehicles, getStops, getDepartures, plan, geocode, trip, station, weather, vehicleRoute, lineRoutes, alerts } = require("../lib/transit");
 
 const { sendContact, ContactError } = require("../lib/contact");
+const { flights } = require("../lib/flights");
 if (!process.env.RESEND_API_KEY) process.env.CONTACT_DRY_RUN = "1";
 
 const PORT = process.env.PORT || 5180;
@@ -42,6 +43,7 @@ http
       if (url.pathname === "/api/vroute") return await json(q("mode") === "line" ? lineRoutes(q("type"), q("line")) : vehicleRoute(q("type"), q("line"), q("lat"), q("lon"), q("heading"), q("dest"), q("start")), "no-store");
       if (url.pathname === "/api/alerts") return await json(alerts(), "no-cache");
       if (url.pathname === "/api/weather") return await json(weather(q("city")), "no-cache");
+      if (url.pathname === "/api/station" && q("airport") != null) return await json(flights(q("lang")), "no-store");
       if (url.pathname === "/api/station") return await json(station(q("name"), q("lat"), q("lon")), "no-store");
       if (url.pathname === "/api/contact") {
         // Locally, without RESEND_API_KEY, messages are only printed (CONTACT_DRY_RUN=1 is set below).
