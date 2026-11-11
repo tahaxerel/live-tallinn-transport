@@ -7,6 +7,9 @@ const fs = require("fs");
 const path = require("path");
 const { getVehicles, getStops, getDepartures, plan, geocode, trip, station, weather, vehicleRoute, lineRoutes, alerts } = require("../lib/transit");
 
+const { sendContact, ContactError } = require("../lib/contact");
+if (!process.env.RESEND_API_KEY) process.env.CONTACT_DRY_RUN = "1";
+
 const PORT = process.env.PORT || 5180;
 const PUBLIC = path.join(__dirname, "..", "public");
 
@@ -40,6 +43,15 @@ http
       if (url.pathname === "/api/alerts") return await json(alerts(), "no-cache");
       if (url.pathname === "/api/weather") return await json(weather(q("city")), "no-cache");
       if (url.pathname === "/api/station") return await json(station(q("name"), q("lat"), q("lon")), "no-store");
+      if (url.pathname === "/api/contact") {
+        // Locally, without RESEND_API_KEY, messages are only printed (CONTACT_DRY_RUN=1 is set below).
+        const send = (status, obj) => { res.writeHead(status, { "content-type": "application/json", "cache-control": "no-store" }); res.end(JSON.stringify(obj)); };
+        if (req.method !== "POST") return send(405, { error: "method" });
+        let raw = ""; for await (const c of req) { raw += c; if (raw.length > 20000) break; }
+        let body = {}; try { body = JSON.parse(raw); } catch {}
+        try { return send(200, await sendContact(body, req.socket.remoteAddress)); }
+        catch (e) { return send(e instanceof ContactError ? e.status : 502, { error: e.code || "send" }); }
+      }
 
       let p = url.pathname === "/" ? "/index.html" : url.pathname;
       if (p === "/install") p = "/install.html";

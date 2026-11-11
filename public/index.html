@@ -187,6 +187,22 @@
   #topleft { position: absolute; z-index: 999; top: calc(12px + env(safe-area-inset-top)); left: 12px; display: flex; gap: 8px; pointer-events: none; }
   #topleft > .glass { position: static; pointer-events: auto; }
   #alertsAct[hidden] { display: none; }
+  /* ---------- Contact form ---------- */
+  .cform { display: flex; flex-direction: column; gap: 12px; padding: 14px 16px 16px; overflow-y: auto; min-height: 0; }
+  .cform .cintro { margin: 0; font-size: 13px; font-weight: 600; color: var(--muted); line-height: 1.45; }
+  .cform label { display: flex; flex-direction: column; gap: 5px; font-size: 12px; font-weight: 800; color: var(--muted); }
+  .cform input, .cform textarea { width: 100%; box-sizing: border-box; padding: 10px 12px; border: 1.5px solid var(--line); border-radius: 12px; background: var(--surface); font: inherit; font-weight: 600; font-size: 16px; color: var(--text); outline: none; }
+  .cform textarea { resize: vertical; min-height: 120px; line-height: 1.4; }
+  .cform input:focus, .cform textarea:focus { border-color: var(--stop); box-shadow: 0 0 0 3px rgba(183,163,232,0.25); }
+  .cform .hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+  .cform .cstatus { margin: 0; min-height: 1em; font-size: 13px; font-weight: 700; color: var(--warn); }
+  .cform .cstatus:empty { display: none; }
+  .sendbtn { padding: 13px; border-radius: 999px; border: none; font: inherit; font-weight: 900; font-size: 15px; cursor: pointer; background: var(--me); color: var(--on-color); }
+  .sendbtn:disabled { opacity: .6; cursor: default; }
+  .cdone { padding: 28px 20px 24px; text-align: center; }
+  .cform[hidden], .cdone[hidden] { display: none; }
+  .cdone .big { font-size: 40px; line-height: 1; margin-bottom: 8px; }
+  .cdone p { margin: 0 0 10px; font-weight: 800; font-size: 15px; }
   #alertsAct.live b { color: #fff; background: var(--warn); border-radius: 999px; padding: 1px 8px; }
   #alerts .list { padding: 6px 12px 10px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; }
   .afilter { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 2px 14px 6px; font-size: 13px; font-weight: 700; color: var(--muted); }
@@ -303,7 +319,7 @@
   #side > .panel { width: 100%; display: none; flex-direction: column; overflow: hidden; min-height: 0; }
   #side > .panel.on { display: flex; }
   #near.on { max-height: 46vh; }
-  #stop.on, #routes.on, #alerts.on, #trip.on, #line.on { max-height: 60vh; }
+  #stop.on, #routes.on, #alerts.on, #contact.on, #trip.on, #line.on { max-height: 60vh; }
   .rt { padding: 10px 10px 8px; border-radius: 16px; display: grid; gap: 6px; }
   .rt + .rt { margin-top: 2px; }
   .rt:hover { background: var(--soft); }
@@ -321,7 +337,7 @@
   #dirSave.on { color: #e5484d; }
   #dirSave:disabled { opacity: .35; cursor: default; }
   .grab { display: none; }
-  @media (min-width: 720px) { #near.on, #stop.on, #alerts.on, #trip.on, #line.on { max-height: 100%; flex: 0 1 auto; } }
+  @media (min-width: 720px) { #near.on, #stop.on, #alerts.on, #contact.on, #trip.on, #line.on { max-height: 100%; flex: 0 1 auto; } }
   @media (max-width: 719px) {
     #side { left: 0; right: 0; bottom: 0; max-height: 100vh; gap: 0; }
     .maplibregl-ctrl-attrib.maplibregl-compact { border-radius: 999px; margin: 0 6px 6px 0 !important; }
@@ -329,9 +345,9 @@
     #side > .panel.dragging { transition: none; }
     /* iOS zooms into any field under 16px; keep phones at 16px and desktops compact. */
     #top .search input, .fields input { font-size: 16px; }
-    #stop.on, #routes.on, #alerts.on, #trip.on, #line.on { max-height: 52vh; }
+    #stop.on, #routes.on, #alerts.on, #contact.on, #trip.on, #line.on { max-height: 52vh; }
     #near.on { max-height: 44vh; }
-    #near.on.tall, #stop.on.tall, #routes.on.tall, #alerts.on.tall, #trip.on.tall, #line.on.tall { max-height: 90vh; }
+    #near.on.tall, #stop.on.tall, #routes.on.tall, #alerts.on.tall, #contact.on.tall, #trip.on.tall, #line.on.tall { max-height: 90vh; }
     body.routes-open #near { display: none !important; }
     .grab { display: block; width: 40px; height: 5px; border-radius: 3px; background: var(--knob); margin: 8px auto 0; flex: none; }
     .panel header { padding-top: 8px; cursor: pointer; }
@@ -623,6 +639,7 @@
       <button class="act fav off" id="favChip"><span class="ic" style="--c:#e0304a">❤️</span><span class="lbl" data-i18n="onlyFavs">Only favourites</span><b id="nFav">0</b><span class="sw"></span></button>
       <button class="act stops" id="stopsChip"><span class="ic" style="--c:#b7a3e8">🚏</span><span class="lbl" data-i18n="stopsOnMap">Stops on the map</span><span class="sw"></span></button>
       <a class="act install" id="installChip" href="/install"><span class="ic" style="--c:#ffc247">📲</span><span class="lbl" data-i18n="installApp">Install app</span><span class="chev">›</span></a>
+      <button class="act" id="contactAct"><span class="ic" style="--c:#4fb38a">✉️</span><span class="lbl" data-i18n="contactUs">Contact us</span><span class="chev">›</span></button>
     </div>
     <h3 class="sect" data-i18n="vehicles">Vehicles</h3>
     <div class="chips">
@@ -733,6 +750,28 @@
     <div class="list" id="nearList"></div>
     <div class="hint" data-i18n="longPressHint">Long-press (or right-click) the map to move your location.</div>
   </aside>
+  <aside id="contact" class="panel">
+    <div class="grab"></div>
+    <header>
+      <h2><span class="emo">✉️</span><span data-i18n="contactUs">Contact us</span></h2>
+      <div class="right"><button class="iconbtn" id="contactClose" title="Close">✕</button></div>
+    </header>
+    <form class="cform" id="contactForm" novalidate>
+      <p class="cintro" data-i18n="contactIntro">Found a bug, have an idea, or want to say hi? Write to us. We read every message.</p>
+      <label><span data-i18n="contactName">Name (optional)</span><input name="name" maxlength="80" autocomplete="name"></label>
+      <label><span data-i18n="contactEmail">Email, if you'd like a reply (optional)</span><input name="email" type="email" maxlength="120" autocomplete="email" inputmode="email"></label>
+      <label><span data-i18n="contactMsg">Message</span><textarea name="message" rows="6" maxlength="3000" required></textarea></label>
+      <!-- honeypot: hidden from people, bots fill it in -->
+      <input name="website" class="hp" tabindex="-1" autocomplete="off" aria-hidden="true">
+      <p class="cstatus" id="contactStatus" role="status" aria-live="polite"></p>
+      <button class="sendbtn" type="submit" id="contactSend" data-i18n="contactSend">Send</button>
+    </form>
+    <div class="cdone" id="contactDone" hidden>
+      <div class="big">💌</div>
+      <p data-i18n="contactThanks">Thanks! Your message is on its way.</p>
+      <button class="linkbtn" id="contactAgain" data-i18n="contactAgain">Write another</button>
+    </div>
+  </aside>
 </div>
 
 <div id="toast" role="status" aria-live="polite"></div>
@@ -783,6 +822,7 @@
       noFavs: "No favourites yet. Tap ♡ on a stop or on a vehicle's card.", favStops: "❤️ Stops", favLines: "❤️ Lines", remove: "Remove",
       elronStation: "🚆 Elron train station", swap: "Swap start and destination",
       share: "Share", linkCopied: "Link copied", vehGone: "That vehicle isn't on the road any more.", waitingN: "{n} waiting to leave", lineLoading: "Loading the route…", lineNoRoute: "Its route isn't available right now: none of its vehicles is out on a trip.", vehHere: "here", nextStops: "Next stops", allStops: "All stops ({n})", hideStops: "Fewer stops", minShort: "{n} min", recents: "Recents", clear: "Clear", alerts: "Service alerts", alertsSource: "Source: Tallinna Transport. Notices are in Estonian.", noAlerts: "No service alerts right now.", alertN: "{n} alert", alertsN: "{n} alerts", allAlerts: "All alerts", alertsFor: "Alerts for line {line}", alertNow: "Now", alertFrom: "From {d}", showMore: "Show more", saved: "Saved", explore: "Explore", vehicles: "Vehicles", onlyFavs: "Only favourites", stopsOnMap: "Stops on the map",
+      contactUs: "Contact us", contactIntro: "Found a bug, have an idea, or want to say hi? Write to us. We read every message.", contactName: "Name (optional)", contactEmail: "Email, if you'd like a reply (optional)", contactMsg: "Message", contactSend: "Send", contactSending: "Sending…", contactThanks: "Thanks! Your message is on its way.", contactAgain: "Write another", contactErrEmpty: "Please write a message first.", contactErrEmail: "That email doesn't look right.", contactErrRate: "Too many messages. Please try again later.", contactErrSend: "Couldn't send it. Please try again in a moment.",
       myRoutes: "My routes", saveRoute: "Save this route", routeName: "Name this route (e.g. Home → Work)", routeSaved: "Saved to My routes", routeExists: "Already in My routes",
       noRoutes: "No saved routes yet.<br>Plan a trip in Directions and tap ♡ to keep it here, with its next departures.", openDirections: "🧭 Plan a trip", flip: "Flip direction", noDeps: "No departures found right now.", nowDep: "now", checking: "Checking…", fromMeNoSave: "Choose a destination first.", waitingLocation: "📍 Waiting for your location…",
     },
@@ -813,6 +853,7 @@
       noFavs: "Lemmikuid veel pole. Puuduta ♡ peatuse paneelil või sõiduki kaardil.", favStops: "❤️ Peatused", favLines: "❤️ Liinid", remove: "Eemalda",
       elronStation: "🚆 Elroni raudteejaam", swap: "Vaheta algus ja sihtkoht",
       share: "Jaga", linkCopied: "Link kopeeritud", vehGone: "Seda sõidukit pole enam teel.", waitingN: "{n} ootab väljumist", lineLoading: "Laen liini…", lineNoRoute: "Liini teekonda praegu pole: ükski sõiduk pole reisil.", vehHere: "siin", nextStops: "Järgmised peatused", allStops: "Kõik peatused ({n})", hideStops: "Vähem peatusi", minShort: "{n} min", recents: "Hiljutised", clear: "Tühjenda", alerts: "Liiklusteated", alertsSource: "Allikas: Tallinna Transport.", noAlerts: "Praegu teateid ei ole.", alertN: "{n} teade", alertsN: "{n} teadet", allAlerts: "Kõik teated", alertsFor: "Liini {line} teated", alertNow: "Praegu", alertFrom: "Alates {d}", showMore: "Loe edasi", saved: "Salvestatud", explore: "Avasta", vehicles: "Sõidukid", onlyFavs: "Ainult lemmikud", stopsOnMap: "Peatused kaardil",
+      contactUs: "Võta ühendust", contactIntro: "Leidsid vea, sul on idee või tahad lihtsalt tere öelda? Kirjuta meile. Loeme iga sõnumit.", contactName: "Nimi (valikuline)", contactEmail: "E-post, kui soovid vastust (valikuline)", contactMsg: "Sõnum", contactSend: "Saada", contactSending: "Saadan…", contactThanks: "Aitäh! Sinu sõnum on teel.", contactAgain: "Kirjuta veel", contactErrEmpty: "Kirjuta enne sõnum.", contactErrEmail: "See e-posti aadress ei tundu õige.", contactErrRate: "Liiga palju sõnumeid. Proovi hiljem uuesti.", contactErrSend: "Saatmine ebaõnnestus. Proovi hetke pärast uuesti.",
       myRoutes: "Minu teekonnad", saveRoute: "Salvesta see teekond", routeName: "Pane teekonnale nimi (nt Koju → Tööle)", routeSaved: "Salvestatud Minu teekondadesse", routeExists: "On juba Minu teekondades",
       noRoutes: "Salvestatud teekondi veel pole.<br>Planeeri teekond ja puuduta ♡, siis näed siin selle järgmisi väljumisi.", openDirections: "🧭 Planeeri teekond", flip: "Pööra suund", noDeps: "Praegu väljumisi ei leitud.", nowDep: "nüüd", checking: "Vaatan…", fromMeNoSave: "Vali kõigepealt sihtkoht.", waitingLocation: "📍 Ootan sinu asukohta…",
     },
@@ -1324,7 +1365,7 @@
     if (on("#near")) closeNear();
     if (on("#routes")) closeRoutes();
     if (on("#dir")) closeDirections();
-    closeAlerts(); closeSearch();
+    closeAlerts(); closeContact(); closeSearch();
     if (v.popup.isOpen()) v.m.togglePopup();
     $("#tripBadge").innerHTML = badge(v.data.type, v.data.label || v.data.line);
     $("#tripTitle").textContent = "→ " + (v.data.dest || v.data.route || "");
@@ -1502,8 +1543,8 @@
   $("#stopsToggle").addEventListener("change", syncStopsChip);
   syncStopsChip();
   // Bottom sheets on phones: tap the header to expand, drag the handle/header down to close, up to expand.
-  const SHEET_CLOSE = { stop: () => closeStop(), near: () => closeNear(), dir: () => closeDirections(), routes: () => closeRoutes(), alerts: () => closeAlerts(), trip: () => closeTrip(), line: () => closeLine(true) };
-  for (const sel of ["#stop header", "#near header", "#dir header", "#routes header", "#alerts header", "#trip header", "#line header"]) {
+  const SHEET_CLOSE = { stop: () => closeStop(), near: () => closeNear(), dir: () => closeDirections(), routes: () => closeRoutes(), alerts: () => closeAlerts(), contact: () => closeContact(), trip: () => closeTrip(), line: () => closeLine(true) };
+  for (const sel of ["#stop header", "#near header", "#dir header", "#routes header", "#alerts header", "#contact header", "#trip header", "#line header"]) {
     const panel = $(sel).closest(".panel");
     let drag = null;
     $(sel).addEventListener("click", (e) => {
@@ -1770,7 +1811,7 @@
     if (on("#near")) closeNear();
     if (on("#routes")) closeRoutes();
     if (on("#dir")) closeDirections();
-    closeTrip(); closeLine(); closeSearch();
+    closeContact(); closeTrip(); closeLine(); closeSearch();
     alertFilter = filter;
     $("#alerts").classList.add("on"); $("#alerts").classList.remove("tall");
     renderAlerts(); fitSheet();
@@ -1781,6 +1822,46 @@
   }
   $("#alertsAct").addEventListener("click", () => openAlerts());
   $("#alertsClose").addEventListener("click", closeAlerts);
+
+  // ---------- Contact form: posts to /api/contact, which mails the owner (the address stays server-side) ----------
+  function openContact() {
+    const on = (id) => $(id).classList.contains("on");
+    if (on("#stop")) closeStop();
+    if (on("#near")) closeNear();
+    if (on("#routes")) closeRoutes();
+    if (on("#dir")) closeDirections();
+    closeAlerts(); closeContact(); closeTrip(); closeLine(); closeSearch();
+    $("#contact").classList.add("on");
+    $("#contact").classList.toggle("tall", isMobile()); // room for the keyboard and the message box
+    fitSheet();
+  }
+  function closeContact() {
+    if (!$("#contact").classList.contains("on")) return;
+    document.activeElement?.blur?.();
+    $("#contact").classList.remove("on", "tall"); fitSheet();
+  }
+  $("#contactAct").addEventListener("click", openContact);
+  $("#contactClose").addEventListener("click", closeContact);
+  $("#contactAgain").addEventListener("click", () => { $("#contactDone").hidden = true; $("#contactForm").hidden = false; });
+  $("#contactForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const f = e.currentTarget, status = $("#contactStatus"), btn = $("#contactSend");
+    const data = Object.fromEntries(new FormData(f));
+    if (String(data.message || "").trim().length < 5) { status.textContent = t("contactErrEmpty"); f.message.focus(); return; }
+    if (data.email && !f.email.checkValidity()) { status.textContent = t("contactErrEmail"); f.email.focus(); return; }
+    status.textContent = ""; btn.disabled = true; btn.textContent = t("contactSending");
+    try {
+      const r = await fetch("/api/contact", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ ...data, lang }) });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(j.error || "send");
+      f.reset(); f.hidden = true; $("#contactDone").hidden = false;
+    } catch (err) {
+      const key = { empty: "contactErrEmpty", email: "contactErrEmail", rate: "contactErrRate" }[err.message] || "contactErrSend";
+      status.textContent = t(key);
+    } finally {
+      btn.disabled = false; btn.textContent = t("contactSend");
+    }
+  });
   $("#alertsList").addEventListener("click", (e) => {
     if (e.target.closest("a")) return;
     const b = e.target.closest("[data-al-line]");
@@ -1825,7 +1906,7 @@
     if (on("#near")) closeNear();
     if (on("#routes")) closeRoutes();
     if (on("#dir")) closeDirections();
-    closeAlerts(); closeTrip(); closeLine();
+    closeAlerts(); closeContact(); closeTrip(); closeLine();
     const color = MODE_COLOR()[type];
     lineView = { type, line, dirs: null, cur: 0, color };
     $("#line").style.setProperty("--c", color);
@@ -2271,7 +2352,7 @@
     syncStopFav();
   });
   function openStop(s, onlySiri = null) {
-    closeAlerts(); closeTrip(); closeLine();
+    closeAlerts(); closeContact(); closeTrip(); closeLine();
     if (!s.train && s.siri && !stops.includes(s)) { // favourite platform: find the real stop by id
       const real = stops.find((o) => o.siri === s.siri);
       if (real) s = real;
@@ -2456,7 +2537,7 @@
     $("#dirTo").value = dir.to ? dir.to.name : "";
   }
   function openDirections(to, from) {
-    closeAlerts(); closeTrip(); closeLine();
+    closeAlerts(); closeContact(); closeTrip(); closeLine();
     if (to !== undefined) dir.to = to;
     if (from !== undefined) dir.from = from;
     syncDirFields();
@@ -2665,7 +2746,7 @@
 
   let routesTimer = null, routesRetry = null, routesSeq = 0;
   function openRoutes() {
-    closeStop(); closeNear(); closeAlerts(); closeTrip(); closeLine();
+    closeStop(); closeNear(); closeAlerts(); closeContact(); closeTrip(); closeLine();
     $("#routes").classList.add("on"); document.body.classList.add("routes-open"); fitSheet();
     closeSearch();
     renderRoutes();
@@ -3009,7 +3090,7 @@
     for (const id of ["me-fill", "me-line"]) if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", on);
   }
   function openNear(fly) {
-    closeAlerts(); closeTrip(); closeLine();
+    closeAlerts(); closeContact(); closeTrip(); closeLine();
     $("#near").classList.add("on"); $("#nearBtn").classList.add("on"); $("#near").classList.remove("tall");
     syncRadiusRing();
     if (fly && me) map.flyTo({ center: [me.lon, me.lat], zoom: Math.max(map.getZoom(), 16), duration: 800, padding: { top: 0, bottom: sheetPad(), left: 0, right: 0 } });
